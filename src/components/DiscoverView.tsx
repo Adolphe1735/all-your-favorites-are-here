@@ -64,14 +64,18 @@ const FALLBACK_FEATURED_TV: TvChannel[] = [
   },
   {
     id: 'RwandaTV.rw',
-    name: 'Rwanda TV',
+    name: 'Rwanda TV (RTV)',
+    description: 'National news and programmes.',
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
     categories: ['general', 'news'],
-    logoUrl: '',
+    logoUrl: 'https://i.imgur.com/4nbGvxW.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/rtv25/rtv/playlist.m3u8',
+    alternateUrls: ['http://197.243.19.131:1935/rtv25/rtv/chunklist.m3u8'],
+    embedUrl: 'https://rba.player.easybroadcast.io/events/151_hc2_uuwnhaa',
     quality: '720p',
+    website: 'https://www.rba.co.rw/tv',
   },
 ];
 

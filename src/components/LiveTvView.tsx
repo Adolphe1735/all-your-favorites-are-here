@@ -76,14 +76,21 @@ const QUICK_FEATURED_CHANNELS: TvChannel[] = [
   },
   {
     id: 'beINSPORTSXTRA.us',
-    name: 'beIN SPORTS XTRA',
+    name: 'beIN SPORTS',
+    description: 'European football competitions, depending on broadcasting rights.',
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
     categories: ['sports'],
-    logoUrl: '',
+    logoUrl: 'https://i.imgur.com/uJosqHh.png',
     streamUrl: 'https://bein-xtra-bein.amagi.tv/playlist.m3u8',
+    alternateUrls: [
+      'https://bein-beinxtrasports-firetv.amagi.tv/playlist.m3u8',
+      'https://d9ssxzmclhfo4.cloudfront.net/bein_sports.m3u8',
+      'https://bein-xtra-xumo.amagi.tv/playlist.m3u8',
+    ],
     quality: '1080p',
+    website: 'https://www.beinsports.com/',
   },
   {
     id: 'ARTFLIXMovieClassics.us',
@@ -109,14 +116,18 @@ const QUICK_FEATURED_CHANNELS: TvChannel[] = [
   },
   {
     id: 'RwandaTV.rw',
-    name: 'Rwanda TV',
+    name: 'Rwanda TV (RTV)',
+    description: 'National news and programmes.',
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
     categories: ['general', 'news'],
-    logoUrl: '',
+    logoUrl: 'https://i.imgur.com/4nbGvxW.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/rtv25/rtv/playlist.m3u8',
+    alternateUrls: ['http://197.243.19.131:1935/rtv25/rtv/chunklist.m3u8'],
+    embedUrl: 'https://rba.player.easybroadcast.io/events/151_hc2_uuwnhaa',
     quality: '720p',
+    website: 'https://www.rba.co.rw/tv',
   },
 ];
 
@@ -357,7 +368,7 @@ export function LiveTvView({
                 : 'border-[var(--sm-border)] bg-[var(--sm-surface)] text-[var(--sm-text-sec)] hover:text-[var(--sm-text)]'
             }`}
           >
-            <span>🇷🇼 Rwanda TV</span>
+            <span>🇷🇼 Rwanda TV (16+)</span>
           </button>
           <button
             type="button"
@@ -454,7 +465,8 @@ export function LiveTvView({
                   </span>
                 </div>
                 <p className="text-xs text-[var(--sm-text-sec)] truncate">
-                  {activeChannel.countryFlag} {activeChannel.countryName} ·{' '}
+                  {activeChannel.countryFlag} {activeChannel.countryName}
+                  {activeChannel.description ? ` · ${activeChannel.description}` : ''} ·{' '}
                   {activeChannel.categories.join(', ')} · {activeChannel.quality}
                 </p>
               </div>
@@ -659,7 +671,9 @@ export function LiveTvView({
                 </span>
                 <span className="text-[var(--sm-text-muted)]">·</span>
                 <h2 className="font-display text-lg font-bold text-[var(--sm-text)]">
-                  {activeCategoryLabel}
+                  {country === 'RW' && category === 'all'
+                    ? '🇷🇼 Rwanda Live TV'
+                    : activeCategoryLabel}
                 </h2>
                 <span className="text-xs font-mono text-[var(--sm-text-muted)] tabular-nums">
                   {loading
@@ -812,9 +826,13 @@ export function LiveTvView({
                       <h3 className="text-sm font-semibold text-[var(--sm-text)] truncate mt-0.5">
                         {ch.name}
                       </h3>
-                      <p className="text-xs text-[var(--sm-text-sec)] truncate">
-                        {ch.countryFlag} {ch.countryName} ·{' '}
-                        {ch.categories.slice(0, 2).join(' · ') || 'general'}
+                      {ch.description && (
+                        <p className="text-xs text-[var(--sm-text-sec)] truncate mt-0.5">
+                          {ch.description}
+                        </p>
+                      )}
+                      <p className="text-[11px] text-[var(--sm-text-muted)] truncate mt-0.5">
+                        {ch.countryFlag} {ch.countryName} · {ch.categories.slice(0, 2).join(' · ') || 'general'}
                       </p>
                     </div>
                   </button>

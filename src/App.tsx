@@ -1784,6 +1784,50 @@ export default function App() {
                   );
                 })()}
               </ErrorBoundary>
+
+              <footer className="mt-12 pt-6 pb-4 border-t border-[var(--sm-border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[var(--sm-text-muted)]">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-[var(--sm-text)]">
+                    Developed by{' '}
+                    <span className="font-display font-bold text-[var(--sm-accent-text)]">
+                      Iragena Adolphe
+                    </span>
+                  </p>
+                  <p className="text-xs text-[var(--sm-text-sec)]">
+                    © {new Date().getFullYear()} Iragena Adolphe · Live TV &amp; Global Music Theatre
+                  </p>
+                </div>
+                <nav aria-label="Footer quick links" className="flex flex-wrap items-center gap-4 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateView({ type: 'discover' })}
+                    className="text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] transition-colors"
+                  >
+                    Discover
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateView({ type: 'rwanda' })}
+                    className="text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] transition-colors"
+                  >
+                    🇷🇼 Rwanda Music
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateView({ type: 'tv' })}
+                    className="text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] transition-colors"
+                  >
+                    Live TV
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNavigateView({ type: 'listening_room' })}
+                    className="text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] transition-colors"
+                  >
+                    Listening Room
+                  </button>
+                </nav>
+              </footer>
             </div>
           </main>
         </div>

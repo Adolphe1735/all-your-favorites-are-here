@@ -132,6 +132,7 @@ export type SleepTimerMode = 'off' | '15' | '30' | '45' | '60' | 'track';
 export interface TvChannel {
   id: string;
   name: string;
+  description?: string;
   countryCode: string;
   countryName: string;
   countryFlag: string;
