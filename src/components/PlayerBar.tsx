@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Play,
   Pause,
@@ -107,6 +107,23 @@ export function PlayerBar({
 }: PlayerBarProps) {
   const [sleepMenuOpen, setSleepMenuOpen] = useState(false);
   const [crossfadeMenuOpen, setCrossfadeMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!sleepMenuOpen && !crossfadeMenuOpen) return;
+    const onDismiss = () => {
+      setSleepMenuOpen(false);
+      setCrossfadeMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onDismiss();
+    };
+    window.addEventListener('click', onDismiss);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', onDismiss);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [sleepMenuOpen, crossfadeMenuOpen]);
 
   const safeDuration = currentTrack?.isLive ? 0 : duration > 0 ? duration : currentTrack?.durationSec || 0;
   const progressPct = safeDuration > 0 ? Math.min(100, (currentTime / safeDuration) * 100) : 0;
@@ -346,10 +363,13 @@ export function PlayerBar({
           )}
 
           {/* Sleep Timer */}
-          <div className="relative">
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              onClick={() => setSleepMenuOpen((v) => !v)}
+              onClick={() => {
+                setSleepMenuOpen((v) => !v);
+                setCrossfadeMenuOpen(false);
+              }}
               title="Sleep Timer"
               aria-label="Sleep Timer"
               className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-mono tabular-nums transition-colors ${
@@ -403,7 +423,7 @@ export function PlayerBar({
           </div>
 
           {/* Crossfade Duration Popover */}
-          <div className="relative">
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => {
@@ -521,6 +541,93 @@ export function PlayerBar({
             <ListMusic size={15} />
             <span className="font-mono tabular-nums">{queueCount}</span>
           </button>
+        </div>
+
+        {/* Mobile Compact Utility Strip */}
+        <div className="flex md:hidden items-center justify-between w-full gap-2 pt-1.5 border-t border-[var(--sm-border)]/70">
+          <div className="flex items-center gap-1">
+            {currentTrack && (
+              <>
+                {currentTrack.youtubeVideoId && onToggleMusicVideo && (
+                  <button
+                    type="button"
+                    onClick={onToggleMusicVideo}
+                    aria-label={showMusicVideo ? 'Hide Music Video' : 'Show Music Video'}
+                    className={`p-1.5 rounded-md transition-colors ${
+                      showMusicVideo
+                        ? 'bg-[var(--sm-accent-soft)] text-[var(--sm-accent-text)]'
+                        : 'text-[var(--sm-text-sec)]'
+                    }`}
+                  >
+                    <Film size={15} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onOpenLyrics(currentTrack)}
+                  aria-label="Lyrics and liner notes"
+                  className="p-1.5 rounded-md text-[var(--sm-text-sec)] hover:bg-[var(--sm-muted)]"
+                >
+                  <FileText size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenStoreModal(currentTrack)}
+                  aria-label="Digital store links"
+                  className="p-1.5 rounded-md text-[var(--sm-text-sec)] hover:bg-[var(--sm-muted)]"
+                >
+                  <ShoppingBag size={15} />
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={onOpenListeningRoom}
+              aria-label="Open Listening Room and EQ"
+              className={`p-1.5 rounded-md transition-colors ${
+                eqEnabled ? 'text-[var(--sm-accent-text)]' : 'text-[var(--sm-text-sec)]'
+              }`}
+            >
+              <SlidersHorizontal size={15} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onToggleMute}
+              aria-label={isMuted ? 'Unmute' : 'Mute'}
+              className="p-1.5 rounded-md text-[var(--sm-text-sec)]"
+            >
+              {isMuted || volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.02}
+              value={isMuted ? 0 : volume}
+              onChange={(e) => onVolumeChange(Number(e.target.value))}
+              aria-label="Mobile volume"
+              style={{
+                background: `linear-gradient(to right, var(--sm-accent) ${(isMuted ? 0 : volume) * 100}%, rgba(128,125,116,0.25) ${(isMuted ? 0 : volume) * 100}%)`,
+              }}
+              className="soundmark-range w-20 h-1 rounded-full"
+            />
+            <button
+              type="button"
+              onClick={onToggleQueue}
+              aria-label="Toggle playback queue"
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                queueOpen
+                  ? 'bg-[var(--sm-accent)] text-[var(--sm-on-accent)]'
+                  : 'text-[var(--sm-text-sec)] bg-[var(--sm-muted)]/60'
+              }`}
+            >
+              <ListMusic size={14} />
+              <span className="font-mono tabular-nums">{queueCount}</span>
+            </button>
+          </div>
         </div>
       </div>
     </footer>

@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import express, { type Request, type Response } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
@@ -257,7 +258,75 @@ function proxyStreamUrl(rawUrl: string): string {
   return `/api/music/stream?url=${encodeURIComponent(rawUrl)}`;
 }
 
-async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 5500): Promise<T | null> {
+function isPrivateOrBlockedIpv4(ip: string): boolean {
+  const parts = ip.split('.').map((n) => Number(n));
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return true;
+  }
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 169 && b === 254) return true; // Cloud metadata & link-local
+  if (a === 172 && b >= 16 && b <= 31) return true; // Private RFC1918
+  if (a === 192 && b === 168) return true; // Private RFC1918
+  if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+  if (a >= 224) return true; // Multicast & reserved
+  return false;
+}
+
+function isSafePublicHttpUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (!host) return false;
+    if (
+      host === 'localhost' ||
+      host.endsWith('.localhost') ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal')
+    ) {
+      return false;
+    }
+    if (net.isIPv4(host)) {
+      return !isPrivateOrBlockedIpv4(host);
+    }
+    if (net.isIPv6(host)) {
+      const norm = host.toLowerCase();
+      if (norm === '::' || norm === '::1') return false;
+      if (norm.startsWith('fe80:') || norm.startsWith('fc') || norm.startsWith('fd')) return false;
+      if (norm.startsWith('::ffff:')) {
+        const mapped = norm.slice('::ffff:'.length);
+        if (net.isIPv4(mapped)) return !isPrivateOrBlockedIpv4(mapped);
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchWithHandshakeTimeout(
+  url: string,
+  init: RequestInit,
+  req: Request,
+  timeoutMs = 15000,
+): Promise<globalThis.Response> {
+  const controller = new AbortController();
+  const onClose = () => controller.abort();
+  req.on('close', onClose);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchJsonWithTimeout<T>(
+  url: string,
+  timeoutMs = 5500,
+  extraHeaders?: Record<string, string>,
+): Promise<T | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -266,6 +335,7 @@ async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 5500): Promise<T
       headers: {
         'User-Agent': 'SoundmarkAudioPlatform/1.0',
         Accept: 'application/json',
+        ...extraHeaders,
       },
     });
     if (!res.ok) return null;
@@ -442,7 +512,12 @@ interface RadioStationRaw {
   codec?: string;
 }
 
-async function fetchRadioStations(country?: string, query?: string, limit = 8): Promise<MusicTrack[]> {
+async function fetchRadioStations(
+  country?: string,
+  query?: string,
+  limit = 8,
+  tag?: string,
+): Promise<MusicTrack[]> {
   for (const host of RADIO_HOSTS) {
     const params = new URLSearchParams({
       limit: String(limit),
@@ -451,11 +526,14 @@ async function fetchRadioStations(country?: string, query?: string, limit = 8): 
       reverse: 'true',
       is_https: 'true',
     });
-    if (country && country !== 'All Countries' && country !== 'Global') {
+    if (country && country !== 'All Countries' && country !== 'ALL' && country !== 'Global') {
       params.set('country', country);
     }
     if (query) {
       params.set('name', query);
+    }
+    if (tag && tag !== 'all' && tag !== 'All Radio') {
+      params.set('tag', tag);
     }
     const json = await fetchJsonWithTimeout<RadioStationRaw[]>(
       `${host}/json/stations/search?${params.toString()}`,
@@ -950,12 +1028,17 @@ async function fetchMusicBrainzRwandaArtists(): Promise<ArtistSummary[]> {
 
   mbRwandaInFlight = (async () => {
     try {
-      const p1 = await fetchJsonWithTimeout<{
-        artists?: Array<{ id: string; name: string; disambiguation?: string; tags?: Array<{ name: string }> }>;
-      }>('https://musicbrainz.org/ws/2/artist?query=area:Rwanda&limit=100&offset=0&fmt=json', 4500);
-      const p2 = await fetchJsonWithTimeout<{
-        artists?: Array<{ id: string; name: string; disambiguation?: string; tags?: Array<{ name: string }> }>;
-      }>('https://musicbrainz.org/ws/2/artist?query=area:Rwanda&limit=100&offset=100&fmt=json', 4500);
+      const mbHeaders = {
+        'User-Agent': 'SoundmarkAudioPlatform/1.0 (https://soundmark.app)',
+      };
+      const [p1, p2] = await Promise.all([
+        fetchJsonWithTimeout<{
+          artists?: Array<{ id: string; name: string; disambiguation?: string; tags?: Array<{ name: string }> }>;
+        }>('https://musicbrainz.org/ws/2/artist?query=area:Rwanda&limit=100&offset=0&fmt=json', 4500, mbHeaders),
+        fetchJsonWithTimeout<{
+          artists?: Array<{ id: string; name: string; disambiguation?: string; tags?: Array<{ name: string }> }>;
+        }>('https://musicbrainz.org/ws/2/artist?query=area:Rwanda&limit=100&offset=100&fmt=json', 4500, mbHeaders),
+      ]);
       const combined = [...(p1?.artists || []), ...(p2?.artists || [])];
       if (combined.length === 0) return cachedMbRwandaArtists?.artists || [];
 
@@ -1400,6 +1483,13 @@ async function getRwandaTrendingShowcase(): Promise<MusicTrack[]> {
       }
     }
   }
+  if (picked.length === 0) {
+    const audiusFallback = await searchAudiusTracks('afrobeats east africa kigali', 10);
+    const pool = audiusFallback.length > 0 ? audiusFallback : RESILIENT_FALLBACK_TRACKS;
+    for (const t of pool) {
+      picked.push({ ...t, genre: 'Afropop & R&B' });
+    }
+  }
   if (picked.length > 0) {
     cachedRwandaTrending = { timestamp: Date.now(), tracks: picked };
   }
@@ -1778,6 +1868,72 @@ app.get('/api/music/rwanda', async (req: Request, res: Response) => {
   }
 });
 
+// 2c. Dedicated Live Radio Endpoint ("Show Radio Alone")
+const RADIO_GENRE_OPTIONS = [
+  { id: 'all', label: 'All Radio' },
+  { id: 'news', label: 'News & Talk' },
+  { id: 'music', label: 'Music & Hits' },
+  { id: 'afrobeats', label: 'Afrobeats & African' },
+  { id: 'jazz', label: 'Jazz & Blues' },
+  { id: 'electronic', label: 'Electronic & Dance' },
+  { id: 'hiphop', label: 'Hip-Hop & Urban' },
+  { id: 'gospel', label: 'Gospel & Christian' },
+  { id: 'classical', label: 'Classical & Ambient' },
+  { id: 'sports', label: 'Sports Radio' },
+  { id: 'rock', label: 'Rock & Indie' },
+];
+
+const RADIO_COUNTRIES = [
+  'All Countries',
+  'Rwanda',
+  'United States',
+  'United Kingdom',
+  'France',
+  'Germany',
+  'Kenya',
+  'Nigeria',
+  'South Africa',
+  'Ghana',
+  'Canada',
+  'Japan',
+  'Brazil',
+  'Australia',
+  'Netherlands',
+  'Switzerland',
+];
+
+app.get('/api/music/radio', async (req: Request, res: Response) => {
+  const q = String(req.query.q || '').trim();
+  const country = String(req.query.country || 'All Countries').trim();
+  const tag = String(req.query.tag || 'all').trim().toLowerCase();
+  const limit = Math.min(60, Math.max(8, Number(req.query.limit) || 36));
+
+  try {
+    let stations = await fetchRadioStations(
+      country !== 'All Countries' ? country : undefined,
+      q || undefined,
+      limit,
+      tag !== 'all' ? tag : undefined,
+    );
+
+    // If querying Rwanda or a niche filter returns few stations, try broader country/query fallback
+    if (stations.length === 0 && country !== 'All Countries' && tag !== 'all') {
+      stations = await fetchRadioStations(country, q || undefined, limit);
+    }
+    if (stations.length === 0 && !q && tag === 'all') {
+      stations = await fetchRadioStations(undefined, undefined, limit);
+    }
+
+    res.json({
+      stations,
+      countries: RADIO_COUNTRIES,
+      genres: RADIO_GENRE_OPTIONS,
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to load live radio stations' });
+  }
+});
+
 // 3. Artists Directory
 app.get('/api/music/artists', async (req: Request, res: Response) => {
   const q = String(req.query.q || '').trim();
@@ -1952,9 +2108,9 @@ app.get('/api/music/stream', async (req: Request, res: Response) => {
   if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
     return res.status(400).send('Invalid stream URL');
   }
-
-  const controller = new AbortController();
-  req.on('close', () => controller.abort());
+  if (!isSafePublicHttpUrl(targetUrl)) {
+    return res.status(403).send('Blocked private or unsupported URL');
+  }
 
   try {
     const forwardHeaders: Record<string, string> = {
@@ -1964,11 +2120,15 @@ app.get('/api/music/stream', async (req: Request, res: Response) => {
       forwardHeaders.Range = String(req.headers.range);
     }
 
-    const upstream = await fetch(targetUrl, {
-      headers: forwardHeaders,
-      redirect: 'follow',
-      signal: controller.signal,
-    });
+    const upstream = await fetchWithHandshakeTimeout(
+      targetUrl,
+      {
+        headers: forwardHeaders,
+        redirect: 'follow',
+      },
+      req,
+      15000,
+    );
 
     if (!upstream.ok && upstream.status !== 206) {
       return res.status(upstream.status).send('Upstream audio unavailable');
@@ -3153,26 +3313,34 @@ function scoreStreamHost(url: string): number {
   return 5 + httpsBonus;
 }
 
-let cachedTvCatalog: {
+interface TvCatalogCache {
   timestamp: number;
   channels: TvChannel[];
   countries: TvCountryOption[];
   categories: TvCategoryOption[];
-} | null = null;
+}
+
+let cachedTvCatalog: TvCatalogCache | null = null;
+let tvCatalogInFlight: Promise<TvCatalogCache> | null = null;
 const TV_CACHE_TTL_MS = 1000 * 60 * 30;
 
-async function buildTvCatalog() {
+async function buildTvCatalog(): Promise<TvCatalogCache> {
   if (cachedTvCatalog && Date.now() - cachedTvCatalog.timestamp < TV_CACHE_TTL_MS) {
     return cachedTvCatalog;
   }
+  if (tvCatalogInFlight) {
+    return tvCatalogInFlight;
+  }
 
-  const [channelsRaw, streamsRaw, countriesRaw, logosRaw, categoriesRaw] = await Promise.all([
-    fetchJsonWithTimeout<IptvChannelRaw[]>('https://iptv-org.github.io/api/channels.json', 9000),
-    fetchJsonWithTimeout<IptvStreamRaw[]>('https://iptv-org.github.io/api/streams.json', 9000),
-    fetchJsonWithTimeout<IptvCountryRaw[]>('https://iptv-org.github.io/api/countries.json', 7000),
-    fetchJsonWithTimeout<IptvLogoRaw[]>('https://iptv-org.github.io/api/logos.json', 9000),
-    fetchJsonWithTimeout<IptvCategoryRaw[]>('https://iptv-org.github.io/api/categories.json', 7000),
-  ]);
+  tvCatalogInFlight = (async (): Promise<TvCatalogCache> => {
+    try {
+      const [channelsRaw, streamsRaw, countriesRaw, logosRaw, categoriesRaw] = await Promise.all([
+        fetchJsonWithTimeout<IptvChannelRaw[]>('https://iptv-org.github.io/api/channels.json', 8500),
+        fetchJsonWithTimeout<IptvStreamRaw[]>('https://iptv-org.github.io/api/streams.json', 8500),
+        fetchJsonWithTimeout<IptvCountryRaw[]>('https://iptv-org.github.io/api/countries.json', 6500),
+        fetchJsonWithTimeout<IptvLogoRaw[]>('https://iptv-org.github.io/api/logos.json', 8500),
+        fetchJsonWithTimeout<IptvCategoryRaw[]>('https://iptv-org.github.io/api/categories.json', 6500),
+      ]);
 
   if (!channelsRaw || !streamsRaw) {
     const fbCountries = new Map<string, TvCountryOption>();
@@ -3336,12 +3504,14 @@ async function buildTvCatalog() {
     }
   }
 
-  // Keep verified featured channels pinned at the top, then sort rest by CDN reliability + logo + name
-  const featuredSet = new Set(VERIFIED_FEATURED_TV.map((f) => f.id));
+  // Keep verified featured channels pinned at the top in curated order, then sort rest by CDN reliability + logo + name
+  const featOrderMap = new Map(VERIFIED_FEATURED_TV.map((f, idx) => [f.id, idx]));
   resolvedChannels.sort((a, b) => {
-    const aFeat = featuredSet.has(a.id) ? 1 : 0;
-    const bFeat = featuredSet.has(b.id) ? 1 : 0;
-    if (aFeat !== bFeat) return bFeat - aFeat;
+    const aFeatIdx = featOrderMap.get(a.id);
+    const bFeatIdx = featOrderMap.get(b.id);
+    if (aFeatIdx !== undefined && bFeatIdx !== undefined) return aFeatIdx - bFeatIdx;
+    if (aFeatIdx !== undefined) return -1;
+    if (bFeatIdx !== undefined) return 1;
     const aScore =
       scoreStreamHost(a.streamUrl) +
       (a.logoUrl ? 4 : 0) +
@@ -3383,6 +3553,12 @@ async function buildTvCatalog() {
     categories,
   };
   return cachedTvCatalog;
+    } finally {
+      tvCatalogInFlight = null;
+    }
+  })();
+
+  return tvCatalogInFlight;
 }
 
 const STREAM_HEALTH_TTL_MS = 1000 * 60 * 15;
@@ -3492,9 +3668,12 @@ async function collectVerifiedChannels(
   const verified: TvChannel[] = [];
   const batchSize = 36;
   const maxToScan = Math.min(list.length, Math.max(128, targetCount * 3));
+  const maxBudgetMs = process.env.VERCEL ? 7500 : 12000;
+  const startedAt = Date.now();
   let scannedCount = 0;
 
   while (scannedCount < maxToScan && verified.length < targetCount) {
+    if (scannedCount > 0 && Date.now() - startedAt >= maxBudgetMs) break;
     const slice = list.slice(scannedCount, scannedCount + batchSize);
     scannedCount += slice.length;
     const results = await Promise.all(slice.map((ch) => resolveVerifiedTvChannel(ch)));
@@ -3586,9 +3765,9 @@ app.get('/api/tv/proxy', async (req: Request, res: Response) => {
   if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
     return res.status(400).send('Invalid TV stream URL');
   }
-
-  const controller = new AbortController();
-  req.on('close', () => controller.abort());
+  if (!isSafePublicHttpUrl(targetUrl)) {
+    return res.status(403).send('Blocked private or unsupported URL');
+  }
 
   try {
     const forwardHeaders: Record<string, string> = {
@@ -3601,11 +3780,15 @@ app.get('/api/tv/proxy', async (req: Request, res: Response) => {
       forwardHeaders.Range = String(req.headers.range);
     }
 
-    const upstream = await fetch(targetUrl, {
-      headers: forwardHeaders,
-      redirect: 'follow',
-      signal: controller.signal,
-    });
+    const upstream = await fetchWithHandshakeTimeout(
+      targetUrl,
+      {
+        headers: forwardHeaders,
+        redirect: 'follow',
+      },
+      req,
+      15000,
+    );
 
     if (!upstream.ok && upstream.status !== 206) {
       return res.status(upstream.status).send('TV stream unavailable');
@@ -3685,6 +3868,16 @@ app.get('/api/tv/proxy', async (req: Request, res: Response) => {
   }
 });
 
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  if (res.headersSent) return;
+  const message = err instanceof Error ? err.message : 'Unexpected server error';
+  if (req.path.startsWith('/api/')) {
+    res.status(500).json({ error: message });
+    return;
+  }
+  res.status(500).send('Internal server error');
+});
+
 async function startServer() {
   if (!IS_PROD) {
     const { createServer: createViteServer } = await import('vite');
@@ -3703,7 +3896,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Soundmark listening on http://0.0.0.0:${PORT}`);
-    // Pre-warm live TV catalog & top streams across all 14 core categories in the background
+    // Pre-warm live TV catalog & top streams across all 24 categories in the background
     buildTvCatalog()
       .then(async (cat) => {
         const rw = cat.channels.filter((c) => c.countryCode === 'RW');

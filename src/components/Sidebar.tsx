@@ -14,6 +14,7 @@ import {
   X,
   Disc3,
   Tv,
+  Radio,
   Palette,
   Music2,
 } from 'lucide-react';
@@ -163,6 +164,20 @@ export function Sidebar({
             <span className="flex items-center gap-2.5">
               <Music2 size={16} />
               <span>Rwanda Music</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onNavigate({ type: 'radio' });
+              onCloseMobile();
+            }}
+            className={navItemClass(activeView.type === 'radio')}
+          >
+            <span className="flex items-center gap-2.5">
+              <Radio size={16} />
+              <span>Live Radio</span>
             </span>
           </button>
 

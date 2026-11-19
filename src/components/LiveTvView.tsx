@@ -181,24 +181,28 @@ export function LiveTvView({
   const playerBoxRef = useRef<HTMLDivElement | null>(null);
   const userStoppedRef = useRef(false);
   const pendingCategoryTuneRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    setQuery(initialQuery);
-  }, [initialQuery]);
+  const fetchAbortRef = useRef<AbortController | null>(null);
+  const prevInitialQueryRef = useRef(initialQuery);
 
   useEffect(() => {
     localStorage.setItem('soundmark_tv_favorites', JSON.stringify(favoriteIds));
   }, [favoriteIds]);
 
   const fetchChannels = useCallback(
-    async (nextOffset = 0, append = false) => {
+    async (nextOffset = 0, append = false, queryOverride?: string) => {
+      fetchAbortRef.current?.abort();
+      const controller = new AbortController();
+      fetchAbortRef.current = controller;
+
       if (append) setLoadingMore(true);
       else setLoading(true);
       setError(null);
 
+      const activeQuery = (queryOverride !== undefined ? queryOverride : query).trim();
+
       try {
         const params = new URLSearchParams({
-          q: query.trim(),
+          q: activeQuery,
           country,
           category,
           limit: '48',
@@ -213,7 +217,9 @@ export function LiveTvView({
           categoryMeta?: Record<string, string>;
         }>(`/api/tv/channels?${params.toString()}`, {
           context: 'Live TV channels',
+          signal: controller.signal,
         });
+        if (controller.signal.aborted) return;
         const incoming: TvChannel[] = data.channels || [];
 
         setChannels((prev) => (append ? [...prev, ...incoming] : incoming));
@@ -236,18 +242,31 @@ export function LiveTvView({
           onSelectChannel(incoming[0]);
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         if (!append) setChannels([]);
         setError(normalizeError(err, 'Live TV channels'));
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (fetchAbortRef.current === controller) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     },
     [query, country, category, onSelectChannel],
   );
 
   useEffect(() => {
-    fetchChannels(0, false);
+    const queryChangedFromTopBar = initialQuery !== prevInitialQueryRef.current;
+    prevInitialQueryRef.current = initialQuery;
+    if (queryChangedFromTopBar) {
+      setQuery(initialQuery);
+      fetchChannels(0, false, initialQuery);
+    } else {
+      fetchChannels(0, false);
+    }
+    return () => {
+      fetchAbortRef.current?.abort();
+    };
   }, [country, category, initialQuery]);
 
   // Automatically start live TV video playback on first visit so video is immediately visible
@@ -581,7 +600,7 @@ export function LiveTvView({
         </div>
       </section>
 
-      {/* Search & Country + 14 Live Category Filters */}
+      {/* Search & Country + 24 Live Category Filters */}
       <div className="space-y-4">
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">

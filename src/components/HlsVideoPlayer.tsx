@@ -65,7 +65,17 @@ export function HlsVideoPlayer({
   useEffect(() => {
     const video = internalRef.current;
 
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
     if (!activeCandidate) {
+      if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
       if (embedUrl) {
         onPlaybackStart?.();
         setStatus('embed');
@@ -79,11 +89,6 @@ export function HlsVideoPlayer({
 
     if (!video) return;
     if (videoRefExternal) videoRefExternal.current = video;
-
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
 
     setStatus('loading');
     setErrorMsg(null);
@@ -215,19 +220,7 @@ export function HlsVideoPlayer({
     setAutoplayMuted(false);
   };
 
-  if (status === 'embed' && embedUrl) {
-    return (
-      <div className="relative w-full h-full bg-[#0E0E0D]">
-        <iframe
-          src={embedUrl}
-          title={`${channelName} live broadcast`}
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-          allowFullScreen
-          className="w-full h-full border-0"
-        />
-      </div>
-    );
-  }
+  const isEmbedMode = status === 'embed' && Boolean(embedUrl);
 
   return (
     <div className="relative w-full h-full bg-[#0E0E0D]">
@@ -239,9 +232,19 @@ export function HlsVideoPlayer({
         controls={controls}
         playsInline
         autoPlay
-        muted={muted || autoplayMuted}
-        className={className}
+        muted={muted || autoplayMuted || isEmbedMode}
+        className={`${className} ${isEmbedMode ? 'hidden' : ''}`}
       />
+
+      {isEmbedMode && embedUrl && (
+        <iframe
+          src={embedUrl}
+          title={`${channelName} live broadcast`}
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full border-0"
+        />
+      )}
 
       {status === 'playing' && autoplayMuted && !muted && (
         <button

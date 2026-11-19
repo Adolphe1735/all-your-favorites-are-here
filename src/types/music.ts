@@ -168,6 +168,7 @@ export type AppView =
   | { type: 'rwanda' }
   | { type: 'artist_profile'; artistId: string; artistName?: string }
   | { type: 'videos' }
+  | { type: 'radio' }
   | { type: 'tv' }
   | { type: 'listening_room' }
   | { type: 'stores' }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   Search,
   Play,
@@ -99,6 +99,7 @@ export function RwandaMusicView({
   const [layoutMode, setLayoutMode] = useState<DirectoryLayout>('cards');
   const [directoryExpanded, setDirectoryExpanded] = useState(true);
   const [loadedCategories, setLoadedCategories] = useState<Record<string, MusicTrack[]>>({});
+  const categoryAbortRef = useRef<AbortController | null>(null);
 
   const loadRwandaHub = useCallback(
     async (signal?: AbortSignal) => {
@@ -153,19 +154,29 @@ export function RwandaMusicView({
     return counts;
   }, [data?.categoryCounts, data?.artists, categories]);
 
+  useEffect(() => {
+    return () => {
+      categoryAbortRef.current?.abort();
+    };
+  }, []);
+
   const handleSelectCategory = (nextCat: string) => {
     setCategory(nextCat);
     setLetterRange('all');
     setDirectoryExpanded(true);
     setCategoryError(null);
+    categoryAbortRef.current?.abort();
 
     if (nextCat !== 'All' && !loadedCategories[nextCat]) {
+      const controller = new AbortController();
+      categoryAbortRef.current = controller;
       setCategoryLoading(true);
       fetchJsonChecked<RwandaMusicResponse>(
         `/api/music/rwanda?category=${encodeURIComponent(nextCat)}`,
-        { context: `${nextCat} tracks` },
+        { context: `${nextCat} tracks`, signal: controller.signal },
       )
         .then((res) => {
+          if (controller.signal.aborted) return;
           const catTracks = (res.trendingTracks || []).filter(
             (t) => (t.genre || '').toLowerCase() === nextCat.toLowerCase(),
           );
@@ -175,9 +186,16 @@ export function RwandaMusicView({
           }
         })
         .catch((err) => {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
           setCategoryError(normalizeError(err, `${nextCat} tracks`));
         })
-        .finally(() => setCategoryLoading(false));
+        .finally(() => {
+          if (categoryAbortRef.current === controller) {
+            setCategoryLoading(false);
+          }
+        });
+    } else {
+      setCategoryLoading(false);
     }
   };
 

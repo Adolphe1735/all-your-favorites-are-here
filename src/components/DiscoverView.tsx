@@ -87,6 +87,7 @@ interface DiscoverViewProps {
   selectedCuratedId: string | null;
   onSelectCurated: (playlistId: string | null) => void;
   onOpenListeningRoom: () => void;
+  onOpenRadio: () => void;
   onOpenLiveTv: () => void;
   onWatchTvChannel: (channel: TvChannel) => void;
   onOpenStoresDirectory: () => void;
@@ -120,6 +121,7 @@ export function DiscoverView({
   selectedCuratedId,
   onSelectCurated,
   onOpenListeningRoom,
+  onOpenRadio,
   onOpenLiveTv,
   onWatchTvChannel,
   onOpenStoresDirectory,
@@ -470,13 +472,23 @@ export function DiscoverView({
       {/* 4. Live Global Radio Stations */}
       {catalog.liveStations.length > 0 && (
         <section className="space-y-4">
-          <div>
-            <h2 className="font-display text-xl sm:text-2xl font-bold text-[var(--sm-text)]">
-              Live World Radio Relays
-            </h2>
-            <p className="text-xs sm:text-sm text-[var(--sm-text-sec)]">
-              Real-time FM and internet broadcasts streamed directly from international stations
-            </p>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-[var(--sm-text)]">
+                Live World Radio Relays
+              </h2>
+              <p className="text-xs sm:text-sm text-[var(--sm-text-sec)]">
+                Real-time FM and internet broadcasts streamed directly from international stations
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenRadio}
+              className="inline-flex items-center gap-1 text-xs font-medium text-[var(--sm-accent-text)] hover:underline whitespace-nowrap shrink-0"
+            >
+              <span>Open Radio Room</span>
+              <ArrowRight size={13} />
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

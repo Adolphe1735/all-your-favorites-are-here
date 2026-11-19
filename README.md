@@ -5,8 +5,8 @@ Boutique hi-fi music discovery, full-length global artist streaming, a 5-band pa
 ## Features
 
 - **Discover & Curated Sessions**: Trending full-length tracks, vinyl/studio sessions, live world radio relays, and Spotify embed resolution.
-- **Rwanda Music Hub**: Searchable directory of 270+ verified Rwandan artists across Afropop & R&B, Hip-Hop & Kinyatrap, Gakondo & Classics, Gospel & Choirs, and DJs & Producers, paired with playable category mixes and live Kigali FM radio.
-- **Global Live TV Theatre**: 14 live television categories (`General`, `News`, `Religious`, `Entertainment`, `Music`, `Movies`, `Series`, `Sports`, `Kids`, `Legislative`, `Education`, `Culture`, `Documentary`, `Comedy`) with adaptive HLS playback, CORS relay fallback, and a dockable Mini TV screen.
+- **Rwanda Music Hub**: Searchable directory of 280+ verified Rwandan artists across Afropop & R&B, Hip-Hop & Kinyatrap, Gakondo & Classics, Gospel & Choirs, and DJs & Producers, paired with playable category mixes and live Kigali FM radio.
+- **Global Live TV Theatre**: 24 numbered live television categories (`1. Sports TV` through `24. Politics TV`), featuring 16 Rwandan TV channels, international football (SuperSport, Canal+ Sport, beIN SPORTS, ESPN, UEFA.tv, FIFA+), Motorsport (Sky Sports F1, Eurosport, FOX Sports, TNT Sports, MAVTV), adaptive HLS playback, CORS relay fallback, and a dockable Mini TV screen.
 - **Studio Console & 5-Band EQ**: Dual-deck equal-power queue crossfade, Web Audio FFT spectrum visualizer, 5-band parametric equalizer presets, playback rate control, and synced lyrics/liner notes.
 - **Resilient Error Handling**: Typed HTTP/network/timeout error normalization (`src/utils/errors.ts`), reusable `ErrorNotice` recovery UI, and React `ErrorBoundary` isolation.
 

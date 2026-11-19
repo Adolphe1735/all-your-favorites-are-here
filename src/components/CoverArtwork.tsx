@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Disc3 } from 'lucide-react';
 
 interface CoverArtworkProps {
@@ -17,6 +17,10 @@ export function CoverArtwork({
   sizeIcon = 22,
 }: CoverArtworkProps) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   if (!src || failed) {
     return (

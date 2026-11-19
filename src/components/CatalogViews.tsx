@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   Search,
   Play,
@@ -122,53 +122,81 @@ export function BrowseView({
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AppErrorInfo | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const prevPropsRef = useRef({
+    initialGenre,
+    initialCountry,
+    initialPlatform,
+    initialQuery,
+  });
 
-  const executeSearch = async (qVal = query, gVal = genre, cVal = country, pVal = platform) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        q: qVal,
-        genre: gVal,
-        country: cVal,
-        platform: pVal,
-        limit: '28',
-      });
-      const data = await fetchJsonChecked<{ tracks?: MusicTrack[] }>(
-        `/api/music/search?${params.toString()}`,
-        { context: 'Catalog search' },
-      );
-      const found: MusicTrack[] = data.tracks || [];
-      setTracks(found);
-      onCacheTracks(found);
-    } catch (err) {
-      setTracks([]);
-      setError(normalizeError(err, 'Catalog search'));
-    } finally {
-      setLoading(false);
+  const executeSearch = useCallback(
+    async (qVal = query, gVal = genre, cVal = country, pVal = platform) => {
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({
+          q: qVal,
+          genre: gVal,
+          country: cVal,
+          platform: pVal,
+          limit: '28',
+        });
+        const data = await fetchJsonChecked<{ tracks?: MusicTrack[] }>(
+          `/api/music/search?${params.toString()}`,
+          { context: 'Catalog search', signal: controller.signal },
+        );
+        if (controller.signal.aborted) return;
+        const found: MusicTrack[] = data.tracks || [];
+        setTracks(found);
+        onCacheTracks(found);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setTracks([]);
+        setError(normalizeError(err, 'Catalog search'));
+      } finally {
+        if (searchAbortRef.current === controller) {
+          setLoading(false);
+        }
+      }
+    },
+    [query, genre, country, platform, onCacheTracks],
+  );
+
+  useEffect(() => {
+    const prev = prevPropsRef.current;
+    let nextQ = query;
+    let nextG = genre;
+    let nextC = country;
+    let nextP = platform;
+
+    if (prev.initialQuery !== initialQuery) {
+      nextQ = initialQuery;
+      setQuery(initialQuery);
     }
-  };
+    if (prev.initialGenre !== initialGenre) {
+      nextG = initialGenre || 'All Genres';
+      setGenre(nextG);
+    }
+    if (prev.initialCountry !== initialCountry) {
+      nextC = initialCountry || 'All Countries';
+      setCountry(nextC);
+    }
+    if (prev.initialPlatform !== initialPlatform) {
+      nextP = initialPlatform || 'All Platforms';
+      setPlatform(nextP);
+    }
+    prevPropsRef.current = { initialGenre, initialCountry, initialPlatform, initialQuery };
 
-  useEffect(() => {
-    if (initialGenre) setGenre(initialGenre);
-  }, [initialGenre]);
-
-  useEffect(() => {
-    if (initialCountry) setCountry(initialCountry);
-  }, [initialCountry]);
-
-  useEffect(() => {
-    if (initialPlatform) setPlatform(initialPlatform);
-  }, [initialPlatform]);
-
-  useEffect(() => {
-    setQuery(initialQuery);
-    executeSearch(initialQuery, genre, country, platform);
-  }, [initialQuery]);
-
-  useEffect(() => {
-    executeSearch(query, genre, country, platform);
-  }, [genre, country, platform]);
+    executeSearch(nextQ, nextG, nextC, nextP);
+    return () => {
+      searchAbortRef.current?.abort();
+    };
+  }, [initialQuery, initialGenre, initialCountry, initialPlatform, genre, country, platform]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -313,27 +341,39 @@ export function ArtistsView({ onSelectArtist }: ArtistsViewProps) {
   const [artists, setArtists] = useState<ArtistSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AppErrorInfo | null>(null);
+  const artistsAbortRef = useRef<AbortController | null>(null);
 
   const loadArtists = async (qVal = query, cVal = country) => {
+    artistsAbortRef.current?.abort();
+    const controller = new AbortController();
+    artistsAbortRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams({ q: qVal, country: cVal, limit: '20' });
       const data = await fetchJsonChecked<{ artists?: ArtistSummary[] }>(
         `/api/music/artists?${params.toString()}`,
-        { context: 'Global artists directory' },
+        { context: 'Global artists directory', signal: controller.signal },
       );
+      if (controller.signal.aborted) return;
       setArtists(data.artists || []);
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setArtists([]);
       setError(normalizeError(err, 'Global artists directory'));
     } finally {
-      setLoading(false);
+      if (artistsAbortRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadArtists(query, country);
+    return () => {
+      artistsAbortRef.current?.abort();
+    };
   }, [country]);
 
   const handleSubmit = (e: FormEvent) => {

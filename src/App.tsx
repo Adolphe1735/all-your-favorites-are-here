@@ -42,6 +42,7 @@ import { PlayerBar } from './components/PlayerBar';
 import { DiscoverView } from './components/DiscoverView';
 import { RwandaMusicView } from './components/RwandaMusicView';
 import { ListeningRoomView } from './components/ListeningRoomView';
+import { RadioView } from './components/RadioView';
 import { LiveTvView } from './components/LiveTvView';
 import { HlsVideoPlayer } from './components/HlsVideoPlayer';
 import {
@@ -161,6 +162,7 @@ export default function App() {
   const [previousView, setPreviousView] = useState<AppView>({ type: 'discover' });
   const [searchQuery, setSearchQuery] = useState('');
   const [topSearchDraft, setTopSearchDraft] = useState('');
+  const [radioSearchQuery, setRadioSearchQuery] = useState('');
   const [tvSearchQuery, setTvSearchQuery] = useState('');
   const [activeTvChannel, setActiveTvChannel] = useState<TvChannel | null>(null);
   const [tvUseProxyRelay, setTvUseProxyRelay] = useState(false);
@@ -242,6 +244,7 @@ export default function App() {
   const ytHostRef = useRef<HTMLDivElement | null>(null);
   const ytPlayerRef = useRef<YtPlayerInstance | null>(null);
   const ytReadyRef = useRef(false);
+  const ytErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleNextRef = useRef<() => void>(() => {});
   const repeatModeRef = useRef<RepeatMode>('off');
   const sleepTimerModeRef = useRef<SleepTimerMode>('off');
@@ -454,7 +457,29 @@ export default function App() {
 
   // Sync active audio deck OR YouTube player when currentTrack changes outside an auto-crossfade
   useEffect(() => {
-    if (!currentTrack) return;
+    if (ytErrorTimerRef.current) {
+      clearTimeout(ytErrorTimerRef.current);
+      ytErrorTimerRef.current = null;
+    }
+
+    if (!currentTrack) {
+      cancelOngoingCrossfade();
+      deckARef.current?.pause();
+      deckBRef.current?.pause();
+      if (ytPlayerRef.current && ytReadyRef.current) {
+        try {
+          ytPlayerRef.current.pauseVideo();
+        } catch {
+          // Ignore
+        }
+      }
+      setIsPlaying(false);
+      setIsBuffering(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setPlaybackError(null);
+      return;
+    }
     if (skipNextDeckLoadRef.current) {
       skipNextDeckLoadRef.current = false;
       return;
@@ -561,7 +586,9 @@ export default function App() {
               setIsBuffering(false);
               setIsPlaying(false);
               setPlaybackError('Track video blocked — skipping to next song');
-              setTimeout(() => {
+              if (ytErrorTimerRef.current) clearTimeout(ytErrorTimerRef.current);
+              ytErrorTimerRef.current = setTimeout(() => {
+                ytErrorTimerRef.current = null;
                 handleNextRef.current();
               }, 1400);
             },
@@ -571,6 +598,10 @@ export default function App() {
 
       return () => {
         cancelled = true;
+        if (ytErrorTimerRef.current) {
+          clearTimeout(ytErrorTimerRef.current);
+          ytErrorTimerRef.current = null;
+        }
       };
     }
 
@@ -799,40 +830,12 @@ export default function App() {
     ],
   );
 
-  const handlePlayTrack = useCallback(
-    (track: MusicTrack, contextTracks?: MusicTrack[]) => {
-      setActiveTvChannel(null);
-      cacheTracks([track, ...(contextTracks || [])]);
-      if (contextTracks && contextTracks.length > 0) {
-        const idx = contextTracks.findIndex((t) => t.id === track.id);
-        setQueue(contextTracks);
-        setCurrentIndex(idx >= 0 ? idx : 0);
-      } else {
-        const existingIdx = queue.findIndex((t) => t.id === track.id);
-        if (existingIdx >= 0) {
-          setCurrentIndex(existingIdx);
-        } else {
-          setQueue((prev) => [track, ...prev]);
-          setCurrentIndex(0);
-        }
-      }
-    },
-    [cacheTracks, queue],
-  );
-
-  const handlePlayAll = useCallback(
-    (tracks: MusicTrack[]) => {
-      if (!tracks.length) return;
-      setActiveTvChannel(null);
-      cacheTracks(tracks);
-      setQueue(tracks);
-      setCurrentIndex(0);
-    },
-    [cacheTracks],
-  );
-
   const handleTogglePlayPause = useCallback(() => {
     if (!currentTrack) return;
+    if (ytErrorTimerRef.current) {
+      clearTimeout(ytErrorTimerRef.current);
+      ytErrorTimerRef.current = null;
+    }
     if (currentTrack.youtubeVideoId) {
       const yt = ytPlayerRef.current;
       if (!yt || !ytReadyRef.current) return;
@@ -865,6 +868,42 @@ export default function App() {
         .catch(() => setPlaybackError('Tap play again to resume stream'));
     }
   }, [currentTrack, ensureWebAudioChain, isPlaying, getActiveAudio, cancelOngoingCrossfade]);
+
+  const handlePlayTrack = useCallback(
+    (track: MusicTrack, contextTracks?: MusicTrack[]) => {
+      setActiveTvChannel(null);
+      cacheTracks([track, ...(contextTracks || [])]);
+      if (contextTracks && contextTracks.length > 0) {
+        const idx = contextTracks.findIndex((t) => t.id === track.id);
+        setQueue(contextTracks);
+        setCurrentIndex(idx >= 0 ? idx : 0);
+      } else {
+        const existingIdx = queue.findIndex((t) => t.id === track.id);
+        if (existingIdx >= 0) {
+          if (existingIdx === currentIndex && !isPlaying) {
+            handleTogglePlayPause();
+          } else {
+            setCurrentIndex(existingIdx);
+          }
+        } else {
+          setQueue((prev) => [track, ...prev]);
+          setCurrentIndex(0);
+        }
+      }
+    },
+    [cacheTracks, queue, currentIndex, isPlaying, handleTogglePlayPause],
+  );
+
+  const handlePlayAll = useCallback(
+    (tracks: MusicTrack[]) => {
+      if (!tracks.length) return;
+      setActiveTvChannel(null);
+      cacheTracks(tracks);
+      setQueue(tracks);
+      setCurrentIndex(0);
+    },
+    [cacheTracks],
+  );
 
   const handleNext = useCallback(() => {
     const nextIdx = resolveNextIndex();
@@ -1063,6 +1102,8 @@ export default function App() {
       const trimmed = topSearchDraft.trim();
       if (activeView.type === 'tv') {
         setTvSearchQuery(trimmed);
+      } else if (activeView.type === 'radio') {
+        setRadioSearchQuery(trimmed);
       } else {
         setSearchQuery(trimmed);
         setActiveView({ type: 'browse' });
@@ -1073,6 +1114,10 @@ export default function App() {
   );
 
   const handlePauseMusicForTv = useCallback(() => {
+    if (ytErrorTimerRef.current) {
+      clearTimeout(ytErrorTimerRef.current);
+      ytErrorTimerRef.current = null;
+    }
     cancelOngoingCrossfade();
     getActiveAudio()?.pause();
     try {
@@ -1133,14 +1178,27 @@ export default function App() {
         if (queueOpen) return setQueueOpen(false);
         if (mobileSearchOpen) return setMobileSearchOpen(false);
       }
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+      const targetEl = e.target as HTMLElement | null;
+      const tag = targetEl?.tagName;
+      if (
+        tag !== 'INPUT' &&
+        tag !== 'TEXTAREA' &&
+        tag !== 'SELECT' &&
+        !targetEl?.isContentEditable
+      ) {
         if (e.key === '/') {
           e.preventDefault();
           topSearchInputRef.current?.focus();
           return;
         }
-        if (e.code === 'Space' && currentTrack) {
+        if (
+          e.code === 'Space' &&
+          currentTrack &&
+          tag !== 'BUTTON' &&
+          tag !== 'A' &&
+          !activeTvChannel &&
+          activeView.type !== 'tv'
+        ) {
           e.preventDefault();
           handleTogglePlayPause();
         }
@@ -1149,6 +1207,9 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [
+    activeTvChannel,
+    activeView.type,
+    colorMenuOpen,
     currentTrack,
     handleTogglePlayPause,
     lyricsModalTrack,
@@ -1296,7 +1357,9 @@ export default function App() {
                   placeholder={
                     activeView.type === 'tv'
                       ? 'Search live TV channels worldwide...'
-                      : 'Search music, live TV, artists, or Spotify URL...'
+                      : activeView.type === 'radio'
+                        ? 'Search live radio stations worldwide...'
+                        : 'Search music, live TV, radio, artists, or Spotify URL...'
                   }
                   aria-label="Global search"
                   className="flex-1 min-w-0 bg-transparent text-xs text-[var(--sm-text)] placeholder:text-[var(--sm-text-muted)] focus:outline-none"
@@ -1307,6 +1370,7 @@ export default function App() {
                     onClick={() => {
                       setTopSearchDraft('');
                       if (activeView.type === 'tv') setTvSearchQuery('');
+                      else if (activeView.type === 'radio') setRadioSearchQuery('');
                       else setSearchQuery('');
                       topSearchInputRef.current?.focus();
                     }}
@@ -1356,6 +1420,15 @@ export default function App() {
                 }`}
               >
                 Rwanda
+              </button>
+              <button
+                type="button"
+                onClick={() => handleNavigateView({ type: 'radio' })}
+                className={`whitespace-nowrap shrink-0 hover:text-[var(--sm-text)] ${
+                  activeView.type === 'radio' ? 'text-[var(--sm-text)] underline underline-offset-4' : ''
+                }`}
+              >
+                Radio
               </button>
               <button
                 type="button"
@@ -1543,6 +1616,7 @@ export default function App() {
                     setActiveView(id ? { type: 'curated', playlistId: id } : { type: 'discover' })
                   }
                   onOpenListeningRoom={() => setActiveView({ type: 'listening_room' })}
+                  onOpenRadio={() => handleNavigateView({ type: 'radio' })}
                   onOpenLiveTv={() => handleNavigateView({ type: 'tv' })}
                   onWatchTvChannel={handleWatchTvFromDiscover}
                   onOpenStoresDirectory={() => setActiveView({ type: 'stores' })}
@@ -1650,6 +1724,21 @@ export default function App() {
                   onOpenLyrics={setLyricsModalTrack}
                   onOpenSpotifyEmbed={handleOpenSpotifyEmbed}
                   onSelectArtist={handleSelectArtist}
+                  onCacheTracks={cacheTracks}
+                />
+              )}
+
+              {activeView.type === 'radio' && (
+                <RadioView
+                  initialQuery={radioSearchQuery}
+                  currentTrack={currentTrack}
+                  isPlaying={isPlaying}
+                  onPlayStation={(station, contextStations) =>
+                    handlePlayTrack(station, contextStations)
+                  }
+                  onTogglePlayPause={handleTogglePlayPause}
+                  onAddToQueue={handleAddToQueue}
+                  onOpenListeningRoom={() => setActiveView({ type: 'listening_room' })}
                   onCacheTracks={cacheTracks}
                 />
               )}
@@ -1814,6 +1903,13 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => handleNavigateView({ type: 'radio' })}
+                    className="text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] transition-colors"
+                  >
+                    Live Radio
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleNavigateView({ type: 'tv' })}
                     className="text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] transition-colors"
                   >
@@ -1843,11 +1939,24 @@ export default function App() {
         currentTrack={currentTrack}
         queue={queue}
         currentIndex={currentIndex}
-        onPlayQueueIndex={(idx) => setCurrentIndex(idx)}
+        onPlayQueueIndex={(idx) => {
+          if (idx === currentIndex && !isPlaying) {
+            handleTogglePlayPause();
+          } else {
+            setCurrentIndex(idx);
+          }
+        }}
         onMoveQueueItem={handleMoveQueueItem}
         onRemoveFromQueue={(idx) => {
+          const nextLength = queue.length - 1;
           setQueue((prev) => prev.filter((_, i) => i !== idx));
-          if (idx < currentIndex) setCurrentIndex((i) => Math.max(0, i - 1));
+          if (nextLength <= 0) {
+            setCurrentIndex(-1);
+          } else if (idx < currentIndex) {
+            setCurrentIndex((i) => Math.max(0, i - 1));
+          } else if (idx === currentIndex) {
+            setCurrentIndex((i) => Math.min(i, nextLength - 1));
+          }
         }}
         onClearUpcoming={() =>
           setQueue((prev) => (currentIndex >= 0 ? prev.slice(0, currentIndex + 1) : []))

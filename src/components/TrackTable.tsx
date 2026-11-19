@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Play,
   Pause,
@@ -54,6 +54,20 @@ export function TrackTable({
 }: TrackTableProps) {
   const [openMenuTrackId, setOpenMenuTrackId] = useState<string | null>(null);
   const [queuedFlashId, setQueuedFlashId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openMenuTrackId) return;
+    const onDismiss = () => setOpenMenuTrackId(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenMenuTrackId(null);
+    };
+    window.addEventListener('click', onDismiss);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('click', onDismiss);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [openMenuTrackId]);
 
   if (tracks.length === 0) {
     return (
@@ -242,7 +256,10 @@ export function TrackTable({
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setOpenMenuTrackId(menuOpen ? null : track.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuTrackId(menuOpen ? null : track.id);
+                    }}
                     title="Add to playlist"
                     aria-label="Add to playlist"
                     className="p-2 rounded-md text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)] transition-colors"
@@ -252,6 +269,7 @@ export function TrackTable({
 
                   {menuOpen && (
                     <div
+                      onClick={(e) => e.stopPropagation()}
                       onMouseLeave={() => setOpenMenuTrackId(null)}
                       className="absolute right-0 top-9 z-30 w-52 rounded-lg border border-[var(--sm-border)] bg-[var(--sm-surface)] shadow-lg py-1.5"
                     >
