@@ -2048,40 +2048,123 @@ interface IptvCategoryRaw {
   name: string;
 }
 
-const CORE_TV_CATEGORIES = [
-  'general',
-  'news',
-  'religious',
-  'entertainment',
-  'music',
-  'movies',
-  'series',
-  'sports',
-  'kids',
-  'legislative',
-  'education',
-  'culture',
-  'documentary',
-  'comedy',
-] as const;
+interface StandardTvCategoryDef {
+  no: number;
+  id: string;
+  name: string;
+  description: string;
+}
+
+const STANDARD_TV_CATEGORIES: StandardTvCategoryDef[] = [
+  { no: 1, id: 'sports', name: 'Sports TV', description: 'Football, basketball, athletics' },
+  { no: 2, id: 'motorsport', name: 'Motorsport TV', description: 'Car racing, motorcycle racing, Formula 1, MotoGP' },
+  { no: 3, id: 'news', name: 'News TV', description: 'National and international news' },
+  { no: 4, id: 'movies', name: 'Movies TV', description: 'Action, comedy, drama, adventure' },
+  { no: 5, id: 'music', name: 'Music TV', description: 'Music videos, concerts, entertainment' },
+  { no: 6, id: 'documentary', name: 'Documentary TV', description: 'History, science, nature, discoveries' },
+  { no: 7, id: 'educational', name: 'Educational TV', description: 'Learning, technology, science, languages' },
+  { no: 8, id: 'kids', name: 'Kids TV', description: "Cartoons and children's programs" },
+  { no: 9, id: 'wildlife', name: 'Wildlife TV', description: 'Animals, forests, oceans and nature' },
+  { no: 10, id: 'technology', name: 'Technology TV', description: 'Computers, AI, robotics and innovation' },
+  { no: 11, id: 'business', name: 'Business TV', description: 'Finance, companies, economics and markets' },
+  { no: 12, id: 'religious', name: 'Religious TV', description: 'Religious teachings and programs' },
+  { no: 13, id: 'lifestyle', name: 'Lifestyle TV', description: 'Fashion, beauty and daily life' },
+  { no: 14, id: 'cooking', name: 'Cooking TV', description: 'Food, recipes and cooking competitions' },
+  { no: 15, id: 'travel', name: 'Travel TV', description: 'Countries, tourism and cultures' },
+  { no: 16, id: 'reality', name: 'Reality TV', description: 'Competitions and reality shows' },
+  { no: 17, id: 'comedy', name: 'Comedy TV', description: 'Comedy shows and stand-up' },
+  { no: 18, id: 'drama', name: 'Drama TV', description: 'Series, soap operas and television dramas' },
+  { no: 19, id: 'automotive', name: 'Automotive TV', description: 'Cars, motorcycles, reviews and repairs' },
+  { no: 20, id: 'gaming', name: 'Gaming & Esports TV', description: 'Video games and gaming competitions' },
+  { no: 21, id: 'weather', name: 'Weather TV', description: 'Weather forecasts and climate' },
+  { no: 22, id: 'agriculture', name: 'Agriculture TV', description: 'Farming, livestock and agribusiness' },
+  { no: 23, id: 'health', name: 'Health TV', description: 'Health education and wellness' },
+  { no: 24, id: 'politics', name: 'Politics TV', description: 'Government, elections and political discussions' },
+];
+
+const CORE_TV_CATEGORIES = STANDARD_TV_CATEGORIES.map((c) => c.id);
 
 const TV_CATEGORY_META: Record<string, string> = {
-  all: 'Live international television broadcasts spanning all 14 live genres and global networks.',
-  general: 'Flagship national broadcasters, public television networks, and live regional TV feeds.',
-  news: '24/7 breaking global newsrooms, live briefings, and international current affairs.',
-  religious: 'Live faith broadcasts, cathedral services, gospel ministries, and spiritual programming.',
-  entertainment: 'Variety networks, lifestyle shows, talk television, and live pop-culture channels.',
-  music: '24-hour music video networks, live concerts, urban beats, and electronic club visuals.',
-  movies: 'Continuous cinema streams, classic feature films, and curated international movie channels.',
-  series: 'Binge-ready drama, crime docuseries, reality TV, and episodic television networks.',
-  sports: 'Live international sports networks, football, motorsport, athletics, and combat sports.',
-  kids: 'Family-safe cartoons, preschool learning channels, and animated adventure streams.',
-  legislative: 'Live parliamentary chambers, public policy hearings, and national assembly feeds.',
-  education: 'History, science, lifelong learning, agricultural, and classroom broadcast channels.',
-  culture: 'Arts, heritage programming, performing arts, literature, and global cultural showcases.',
-  documentary: 'Nature expeditions, science features, investigative films, and historical documentaries.',
-  comedy: 'Stand-up showcases, sitcom marathons, sketch comedy, and late-night humor streams.',
+  all: 'Live international television broadcasts spanning all 24 categorized TV channels worldwide.',
+  ...Object.fromEntries(STANDARD_TV_CATEGORIES.map((c) => [c.id, c.description])),
 };
+
+const VALID_STANDARD_CAT_SET = new Set(CORE_TV_CATEGORIES);
+
+function mapChannelCategories(name: string, rawCats: string[]): string[] {
+  const out = new Set<string>();
+  const lowName = name.toLowerCase();
+
+  for (const raw of rawCats) {
+    const c = raw.toLowerCase().trim();
+    if (VALID_STANDARD_CAT_SET.has(c)) {
+      out.add(c);
+      continue;
+    }
+    if (c === 'education') out.add('educational');
+    else if (c === 'science') {
+      out.add('technology');
+      out.add('educational');
+    } else if (c === 'series') out.add('drama');
+    else if (c === 'auto') out.add('automotive');
+    else if (c === 'legislative') out.add('politics');
+    else if (c === 'outdoor') out.add('wildlife');
+    else if (c === 'culture') {
+      out.add('travel');
+      out.add('documentary');
+    } else if (c === 'animation' || c === 'family') out.add('kids');
+    else if (c === 'entertainment') out.add('lifestyle');
+    else if (c === 'general') out.add('news');
+    else if (c === 'shop') out.add('lifestyle');
+  }
+
+  if (/\b(f1|formula 1|motogp|nascar|motorsport|racing|grand prix)\b/i.test(lowName)) {
+    out.add('motorsport');
+    out.add('sports');
+  }
+  if (/\b(love nature|wildlife|animal|ocean|wild|zoo|forest|nature)\b/i.test(lowName)) {
+    out.add('wildlife');
+  }
+  if (/\b(tech|ai\b|robot|cyber|computer|innovation|astroscience)\b/i.test(lowName)) {
+    out.add('technology');
+  }
+  if (/\b(bloomberg|cnbc|finance|business|market|econom)\b/i.test(lowName)) {
+    out.add('business');
+  }
+  if (/\b(fashion|lifestyle|luxe|beauty)\b/i.test(lowName)) {
+    out.add('lifestyle');
+  }
+  if (/\b(cook|food|kitchen|chef|tastemade|gusto|recipe)\b/i.test(lowName)) {
+    out.add('cooking');
+  }
+  if (/\b(travel|tourism|wander|journey)\b/i.test(lowName)) {
+    out.add('travel');
+  }
+  if (/\b(reality|fear factor|ninja warrior|idol|survivor|competition)\b/i.test(lowName)) {
+    out.add('reality');
+  }
+  if (/\b(auto|car|motor|top gear|garage|driver|mavtv)\b/i.test(lowName)) {
+    out.add('automotive');
+  }
+  if (/\b(gaming|esports?|gametoon|twitch|arcade)\b/i.test(lowName)) {
+    out.add('gaming');
+  }
+  if (/\b(weather|climate|accuweather|meteo)\b/i.test(lowName)) {
+    out.add('weather');
+  }
+  if (/\b(agro|agri|farm|livestock|rural|terraviva)\b/i.test(lowName)) {
+    out.add('agriculture');
+  }
+  if (/\b(health|wellness|fitness|medical|nutrition|yoga)\b/i.test(lowName)) {
+    out.add('health');
+  }
+  if (/\b(parlament|parliament|c-span|senate|congress|politics|sansad|election)\b/i.test(lowName)) {
+    out.add('politics');
+  }
+
+  if (out.size === 0) out.add('news');
+  return Array.from(out);
+}
 
 const VERIFIED_FEATURED_TV: TvChannel[] = [
   {
@@ -2119,7 +2202,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'GB',
     countryName: 'United Kingdom',
     countryFlag: '🇬🇧',
-    categories: ['music', 'entertainment'],
+    categories: ['music', 'lifestyle'],
     logoUrl: '',
     streamUrl: 'https://amg01131-tracetv-amg01131c5-stirr-us-4389.playouts.now.amagi.tv/playlist.m3u8',
     quality: '1080p',
@@ -2143,7 +2226,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'news'],
+    categories: ['news', 'politics', 'drama'],
     logoUrl: 'https://i.imgur.com/4nbGvxW.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/rtv25/rtv/playlist.m3u8',
     alternateUrls: ['http://197.243.19.131:1935/rtv25/rtv/chunklist.m3u8'],
@@ -2158,7 +2241,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['news', 'entertainment', 'general'],
+    categories: ['news', 'lifestyle', 'reality'],
     logoUrl: 'https://i.imgur.com/nQNOHJx.png',
     streamUrl: 'https://live.tv1.rw/index.m3u8',
     quality: '720p',
@@ -2171,7 +2254,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['entertainment', 'general', 'sports'],
+    categories: ['sports', 'drama', 'comedy'],
     logoUrl: 'https://i.imgur.com/DeaWC1N.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/pub1live/mystream/playlist.m3u8',
     quality: '720p',
@@ -2184,7 +2267,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['news', 'entertainment', 'music', 'general'],
+    categories: ['news', 'music', 'lifestyle'],
     logoUrl: 'https://i.imgur.com/bXhEeTC.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/pub2live/myStream/playlist.m3u8',
     quality: '720p',
@@ -2197,7 +2280,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['entertainment', 'music', 'general'],
+    categories: ['music', 'lifestyle', 'reality'],
     logoUrl: 'https://i.imgur.com/PsYPzNc.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/kc2/kc2/chunklist.m3u8',
     alternateUrls: ['http://197.243.19.131:1935/kc2/kc2/chunklist.m3u8'],
@@ -2211,7 +2294,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'news'],
+    categories: ['news', 'lifestyle'],
     logoUrl: 'https://i.imgur.com/WmaP8zP.png',
     streamUrl: 'https://tv.btnrwanda.com:3973/live/btnv2live.m3u8',
     embedUrl: 'https://tv.btnrwanda.com/hybrid-stream-video-widget/btnv2',
@@ -2225,7 +2308,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['music', 'entertainment', 'general'],
+    categories: ['music', 'lifestyle'],
     logoUrl: 'https://i.imgur.com/EfsHaMQ.png',
     streamUrl: 'http://80.241.215.175:1935/isangostar/isangostar/playlist.m3u8',
     quality: '720p',
@@ -2238,7 +2321,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['entertainment', 'general'],
+    categories: ['drama', 'comedy', 'reality'],
     logoUrl: 'https://i.ibb.co/WzLwj3X/IMG-20230703-155036.jpg',
     streamUrl: 'https://tv.btnrwanda.com:3432/live/bpluslive.m3u8',
     embedUrl: 'https://tv.btnrwanda.com/hybrid-stream-video-widget/bplus',
@@ -2252,7 +2335,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['religious', 'general'],
+    categories: ['religious'],
     logoUrl: 'https://i.imgur.com/rP46S5B.png',
     streamUrl: 'https://live.bcntv.org/live/bcn_16_9.m3u8',
     quality: '720p',
@@ -2265,7 +2348,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['sports', 'general'],
+    categories: ['sports'],
     logoUrl: 'https://i.imgur.com/Le7ZxXn.png',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/gMKuGUNfnjE?playlist=gMKuGUNfnjE,F3WeUVKH_Sw,yEH5UDl_-Rw&autoplay=1&rel=0',
@@ -2279,7 +2362,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'news'],
+    categories: ['news', 'politics'],
     logoUrl: 'https://i.imgur.com/0IViNQw.png',
     streamUrl: '',
     embedUrl: 'https://rtsp.me/embed/BU1Lr9xabYEDqX7k/',
@@ -2293,7 +2376,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'culture'],
+    categories: ['travel', 'news'],
     logoUrl: 'https://i.imgur.com/cRA1CuG.png',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/fDYGaZb6VE0?autoplay=1&rel=0',
@@ -2307,7 +2390,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['religious', 'general'],
+    categories: ['religious'],
     logoUrl: 'https://i.imgur.com/Z1BAljS.png',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/5J72KNquRzY?autoplay=1&rel=0',
@@ -2321,7 +2404,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'education', 'news'],
+    categories: ['business', 'educational', 'news'],
     logoUrl: 'https://i.imgur.com/52ouIBt.png',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/o0OWFIsXYoQ?autoplay=1&rel=0',
@@ -2335,7 +2418,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'culture'],
+    categories: ['travel', 'lifestyle'],
     logoUrl: 'https://i.imgur.com/GRHg9Th.jpg',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/RD2-Qj4SyTI?playlist=RD2-Qj4SyTI,NEJjsySc5Zw&autoplay=1&rel=0',
@@ -2349,7 +2432,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'religious'],
+    categories: ['religious', 'educational'],
     logoUrl: 'https://i.imgur.com/PZ1yJjn.png',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/u_Vf0i0wwYQ?autoplay=1&rel=0',
@@ -2397,7 +2480,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'ZA',
     countryName: 'South Africa',
     countryFlag: '🇿🇦',
-    categories: ['sports', 'general'],
+    categories: ['sports'],
     logoUrl: 'https://i.imgur.com/xZFMYj4.png',
     streamUrl: '',
     embedUrl:
@@ -2412,7 +2495,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'FR',
     countryName: 'France',
     countryFlag: '🇫🇷',
-    categories: ['sports', 'general'],
+    categories: ['sports'],
     logoUrl: 'https://i.imgur.com/EOXnU15.png',
     streamUrl: '',
     embedUrl:
@@ -2495,7 +2578,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'GB',
     countryName: 'United Kingdom',
     countryFlag: '🇬🇧',
-    categories: ['sports'],
+    categories: ['motorsport', 'sports'],
     logoUrl: 'https://epg.pw/media/images/epg/2025/02/20/20250220020810596669_35.png',
     streamUrl: '',
     embedUrl:
@@ -2510,7 +2593,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'FR',
     countryName: 'France',
     countryFlag: '🇫🇷',
-    categories: ['sports'],
+    categories: ['motorsport', 'sports', 'automotive'],
     logoUrl: 'https://i.imgur.com/s4jDnJh.png',
     streamUrl: 'https://r.eu.cdn-redge.media/livehls/oeu/mt/live/eurosport_1_en/live.livx/playlist.m3u8',
     alternateUrls: [
@@ -2528,7 +2611,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'ZA',
     countryName: 'South Africa',
     countryFlag: '🇿🇦',
-    categories: ['sports'],
+    categories: ['motorsport', 'sports'],
     logoUrl: 'https://i.imgur.com/QvIPyxE.png',
     streamUrl: '',
     embedUrl: 'https://www.youtube.com/embed/HVScH48KGGA?playlist=HVScH48KGGA,xuDPQrLTjKA,1nfgWGhABn8&autoplay=1&rel=0',
@@ -2542,7 +2625,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['sports'],
+    categories: ['motorsport', 'sports'],
     logoUrl:
       'https://images.fubo.tv/channel-config-ui/station-logos/on-white/espn4k_color_1440x1440.png',
     streamUrl: '',
@@ -2558,7 +2641,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['sports'],
+    categories: ['motorsport', 'sports'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/FOX_Sports_logo.svg/960px-FOX_Sports_logo.svg.png',
     streamUrl: '',
@@ -2573,7 +2656,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'GB',
     countryName: 'United Kingdom',
     countryFlag: '🇬🇧',
-    categories: ['sports'],
+    categories: ['motorsport', 'sports'],
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/TNT_Sports_2021_logo.svg/960px-TNT_Sports_2021_logo.svg.png',
     streamUrl: '',
@@ -2589,7 +2672,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['sports'],
+    categories: ['motorsport', 'automotive', 'sports'],
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d3/MAVTV_Canada.png',
     streamUrl:
       'https://amg00378-mavtv-amg00378c2-samsung-au-1790.playouts.now.amagi.tv/playlist/amg00378-mavtvfast-motorsportsnetwork-samsungau/playlist.m3u8',
@@ -2641,7 +2724,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['series', 'documentary'],
+    categories: ['drama', 'documentary'],
     logoUrl: '',
     streamUrl: 'https://jmp2.uk/plu-62e925bc68d18a00077bb990.m3u8',
     quality: 'HD',
@@ -2652,10 +2735,23 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['series', 'entertainment'],
+    categories: ['reality', 'drama'],
     logoUrl: '',
     streamUrl: 'https://jmp2.uk/plu-5e82530945600e0007ca076c.m3u8',
     quality: '720p',
+  },
+  {
+    id: 'FearFactor.us',
+    name: 'Fear Factor',
+    description: 'Competitions and reality shows.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['reality'],
+    logoUrl: 'https://i.imgur.com/CIYnLWz.png',
+    streamUrl:
+      'https://amg00627-banijaygroup-fearfactor-samsungau-9vdod.amagi.tv/playlist/amg00627-banijaygroup-fearfactor-samsungau/playlist.m3u8',
+    quality: '1080p',
   },
   {
     id: 'BabyFirst.us',
@@ -2663,7 +2759,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['kids', 'education'],
+    categories: ['kids', 'educational'],
     logoUrl: '',
     streamUrl: 'https://cdn.fast.jwp.services/v1/channel/1_jB6940Ei_TvhvIHDL/manifest.m3u8',
     quality: 'HD',
@@ -2685,7 +2781,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['documentary', 'education'],
+    categories: ['documentary', 'educational'],
     logoUrl: '',
     streamUrl:
       'https://amg02333-pbs-amg02333c1-samsung-au-1253.playouts.now.amagi.tv/playlist/amg02333-pbsdistributionfast-pbshistory-samsungau/playlist.m3u8',
@@ -2697,9 +2793,263 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'DE',
     countryName: 'Germany',
     countryFlag: '🇩🇪',
-    categories: ['documentary'],
+    categories: ['documentary', 'wildlife'],
     logoUrl: '',
     streamUrl: 'https://autentic-adventure-earth-1-eu.rakuten.wurl.tv/playlist.m3u8',
+    quality: '720p',
+  },
+  {
+    id: 'LoveNature.ca',
+    name: 'Love Nature',
+    description: 'Animals, forests, oceans and nature.',
+    countryCode: 'CA',
+    countryName: 'Canada',
+    countryFlag: '🇨🇦',
+    categories: ['wildlife', 'documentary'],
+    logoUrl: '',
+    streamUrl: 'https://pb-ehs1glsha1juy.akamaized.net/Love_Nature_4K.m3u8',
+    quality: '4K',
+  },
+  {
+    id: '30ADarcizzleOffshore.us',
+    name: '30A Darcizzle Offshore',
+    description: 'Animals, forests, oceans and nature.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['wildlife', 'travel'],
+    logoUrl: 'https://i.imgur.com/Q4l2uao.png',
+    streamUrl: 'https://30a-tv.com/darcizzle.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'BloombergOriginals.us',
+    name: 'Bloomberg Originals',
+    description: 'Computers, AI, robotics, innovation and markets.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['technology', 'business', 'educational'],
+    logoUrl: '',
+    streamUrl:
+      'https://e96a7526.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0Jsb29tYmVyZ09yaWdpbmFsc19ITFM/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'BloombergTV.us',
+    name: 'Bloomberg TV',
+    description: 'Finance, companies, economics and markets.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['business', 'news'],
+    logoUrl: '',
+    streamUrl: 'https://bloomberg.com/media-manifest/streams/asia.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'CNBCUK.uk',
+    name: 'CNBC UK',
+    description: 'Finance, companies, economics and markets.',
+    countryCode: 'GB',
+    countryName: 'United Kingdom',
+    countryFlag: '🇬🇧',
+    categories: ['business', 'news'],
+    logoUrl: '',
+    streamUrl: 'https://amg01079-nbcuuk-amg01079c2-lg-gb-2030.playouts.now.amagi.tv/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'FashionTVParisLOriginal.fr',
+    name: "FashionTV Paris L'Original",
+    description: 'Fashion, beauty and daily life.',
+    countryCode: 'FR',
+    countryName: 'France',
+    countryFlag: '🇫🇷',
+    categories: ['lifestyle'],
+    logoUrl: '',
+    streamUrl:
+      'https://edge-fast3.evrideo.tv/bfdbb576-83f7-11f0-9f89-0200170e3e04_1000028043_HLS/manifest.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: '30ALuxeLifeDiscovered.us',
+    name: '30A Luxe Life Discovered',
+    description: 'Fashion, beauty and daily life.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['lifestyle', 'travel'],
+    logoUrl: 'https://m.media-amazon.com/images/I/51FJ5A0mEyL.jpg',
+    streamUrl: 'https://30a-tv.com/feeds/vidaa/luxelife.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'GustoTV.ca',
+    name: 'Gusto TV',
+    description: 'Food, recipes and cooking competitions.',
+    countryCode: 'CA',
+    countryName: 'Canada',
+    countryFlag: '🇨🇦',
+    categories: ['cooking', 'lifestyle'],
+    logoUrl: '',
+    streamUrl:
+      'https://563f72af.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0d1c3RvVFZfSExT/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'Tastemade.us',
+    name: 'Tastemade',
+    description: 'Food, recipes and cooking competitions.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['cooking', 'travel'],
+    logoUrl: '',
+    streamUrl: 'https://tastemade-tdint-rakuten.amagi.tv/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'BBCTravel.us',
+    name: 'BBC Travel',
+    description: 'Countries, tourism and cultures.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['travel', 'documentary'],
+    logoUrl: 'https://i.imgur.com/QiuYWs9.png',
+    streamUrl: 'https://jmp2.uk/plu-60e4519e6873180007d3cddb.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'AutenticTravel.de',
+    name: 'Autentic Travel',
+    description: 'Countries, tourism and cultures.',
+    countryCode: 'DE',
+    countryName: 'Germany',
+    countryFlag: '🇩🇪',
+    categories: ['travel'],
+    logoUrl: 'https://www.autentic.com/images/Travel-Logo-positiv-RGB.svg',
+    streamUrl:
+      'https://cb0c87cc605942ff9766a4e6744bbadc.mediatailor.us-east-1.amazonaws.com/v1/master/44f73ba4d03e9607dcd9bebdcb8494d86964f1d8/RlaxxTV-eu_AutenticTravel/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'MotorvisionPlus.de',
+    name: 'Motorvision+',
+    description: 'Cars, motorcycles, reviews and repairs.',
+    countryCode: 'DE',
+    countryName: 'Germany',
+    countryFlag: '🇩🇪',
+    categories: ['automotive', 'motorsport'],
+    logoUrl: '',
+    streamUrl:
+      'https://r.eu.cdn-redge.media/livehls/oeu/mt/live/motorvision_en/live.livx/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'Automotolachaine.fr',
+    name: 'Automoto la chaine',
+    description: 'Cars, motorcycles, reviews and repairs.',
+    countryCode: 'FR',
+    countryName: 'France',
+    countryFlag: '🇫🇷',
+    categories: ['automotive', 'motorsport'],
+    logoUrl: 'https://i.imgur.com/ebf2uc7.png',
+    streamUrl: 'https://r.eu.cdn-redge.media/livehls/oeu/mt/live/automoto/live.livx/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: '30AWeLoveCars.us',
+    name: '30A We Love Cars',
+    description: 'Cars, motorcycles, reviews and repairs.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['automotive'],
+    logoUrl: '',
+    streamUrl: 'https://30a-tv.com/feeds/vidaa/cars.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'Gametoon.nl',
+    name: 'Gametoon',
+    description: 'Video games and gaming competitions.',
+    countryCode: 'NL',
+    countryName: 'Netherlands',
+    countryFlag: '🇳🇱',
+    categories: ['gaming'],
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/tr/b/b6/Gametoon_HD_logo.png',
+    streamUrl: 'https://webtvstream.bhtelecom.ba/gametoon.m3u8',
+    embedUrl:
+      'https://www.youtube.com/embed/RHlyno8_9vI?playlist=RHlyno8_9vI,AlOwMEAtD0Q,7THAvCYXqbg&autoplay=1&rel=0',
+    quality: '1080p',
+  },
+  {
+    id: 'eSportsMaxTV.ve',
+    name: 'eSports Max TV',
+    description: 'Video games and gaming competitions.',
+    countryCode: 'VE',
+    countryName: 'Venezuela',
+    countryFlag: '🇻🇪',
+    categories: ['gaming'],
+    logoUrl: 'https://i.imgur.com/OprRgQN.png',
+    streamUrl: 'https://cdnlive.klicgo.net/esportsmax/live/playlist_dvr.m3u8',
+    embedUrl:
+      'https://www.youtube.com/embed/AlOwMEAtD0Q?playlist=AlOwMEAtD0Q,rH-XexiOBCA,teT0Vnuq_9o&autoplay=1&rel=0',
+    quality: '1080p',
+  },
+  {
+    id: 'AccuWeatherNOW.us',
+    name: 'AccuWeather NOW',
+    description: 'Weather forecasts and climate.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['weather', 'news'],
+    logoUrl: 'https://i.imgur.com/M8wbVYK.png',
+    streamUrl:
+      'https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg00684-accuweather-accuweather-plex/playlist.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'FoxWeather.us',
+    name: 'Fox Weather',
+    description: 'Weather forecasts and climate.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['weather', 'news'],
+    logoUrl: '',
+    streamUrl:
+      'https://aka-live1050.delivery.roku.com/2ff50939-341e-4fa8-becf-718769322f14/t2-origin/out/v1/live.m3u8',
+    quality: '1080p',
+  },
+  {
+    id: 'AgrotendenciaTV.cr',
+    name: 'Agrotendencia TV',
+    description: 'Farming, livestock and agribusiness.',
+    countryCode: 'CR',
+    countryName: 'Costa Rica',
+    countryFlag: '🇨🇷',
+    categories: ['agriculture', 'business'],
+    logoUrl: 'https://i.imgur.com/frd60hR.png',
+    streamUrl:
+      'https://5fc584f3f19c9.streamlock.net/agrotendencia/videoagrotendencia_hls1/playlist.m3u8',
+    quality: '720p',
+  },
+  {
+    id: 'BetterHealthTV.us',
+    name: 'Better Health TV',
+    description: 'Health education and wellness.',
+    countryCode: 'US',
+    countryName: 'United States',
+    countryFlag: '🇺🇸',
+    categories: ['health', 'educational'],
+    logoUrl: 'https://i.imgur.com/qnwJiji.png',
+    streamUrl: 'https://tgn.bozztv.com/betterlife/betterhealth/betterhealth/index.m3u8',
+    embedUrl:
+      'https://www.youtube.com/embed/ZtL74IHkqFc?playlist=ZtL74IHkqFc,Yr48xp-22bM,345Se_skBOk&autoplay=1&rel=0',
     quality: '720p',
   },
   {
@@ -2708,7 +3058,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'GB',
     countryName: 'United Kingdom',
     countryFlag: '🇬🇧',
-    categories: ['culture', 'documentary'],
+    categories: ['documentary', 'travel'],
     logoUrl: '',
     streamUrl:
       'https://vs-hls-pushb-uk-live.akamaized.net/x=4/i=urn:bbc:pips:service:bbc_four_hd/mobile_wifi_main_hd_abr_v2.m3u8',
@@ -2720,7 +3070,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['culture', 'entertainment'],
+    categories: ['lifestyle', 'comedy'],
     logoUrl: '',
     streamUrl: 'https://foxsoul-vizio.amagi.tv/playlist.m3u8',
     quality: '1080p',
@@ -2731,7 +3081,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'IN',
     countryName: 'India',
     countryFlag: '🇮🇳',
-    categories: ['legislative'],
+    categories: ['politics'],
     logoUrl: '',
     streamUrl: 'https://d2lk5u59tns74c.cloudfront.net/out/v1/fff8f20221d5456e8922e689d71dedc3/index.m3u8',
     quality: '1080p',
@@ -2742,7 +3092,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'ES',
     countryName: 'Spain',
     countryFlag: '🇪🇸',
-    categories: ['legislative'],
+    categories: ['politics'],
     logoUrl: '',
     streamUrl: 'https://congresodirecto.akamaized.net/hls/live/2037973/canalparlamento/master.m3u8',
     quality: '360p',
@@ -2764,7 +3114,7 @@ const VERIFIED_FEATURED_TV: TvChannel[] = [
     countryCode: 'US',
     countryName: 'United States',
     countryFlag: '🇺🇸',
-    categories: ['comedy', 'series'],
+    categories: ['comedy', 'drama'],
     logoUrl: '',
     streamUrl:
       'https://amg00353-lionsgatestudio-angermgmt-samsungau-o9jg9.amagi.tv/playlist/amg00353-lionsgatestudio-angermgmt-samsungau/playlist.m3u8',
@@ -2851,10 +3201,12 @@ async function buildTvCatalog() {
       timestamp: Date.now(),
       channels: VERIFIED_FEATURED_TV,
       countries: Array.from(fbCountries.values()).sort((a, b) => b.count - a.count),
-      categories: CORE_TV_CATEGORIES.map((id) => ({
-        id,
-        name: id[0].toUpperCase() + id.slice(1),
-        count: fbCategories.get(id) || 0,
+      categories: STANDARD_TV_CATEGORIES.map((c) => ({
+        id: c.id,
+        no: c.no,
+        name: `${c.no}. ${c.name}`,
+        description: c.description,
+        count: fbCategories.get(c.id) || 0,
       })),
     };
   }
@@ -2959,7 +3311,9 @@ async function buildTvCatalog() {
     const cInfo = countryMap.get(countryCode);
     const countryName = cInfo?.name || (countryCode === 'INT' ? 'International' : countryCode);
     const countryFlag = cInfo?.flag || '🌐';
-    const cats = entry.ch?.categories && entry.ch.categories.length > 0 ? entry.ch.categories : ['general'];
+    const rawCats =
+      entry.ch?.categories && entry.ch.categories.length > 0 ? entry.ch.categories : ['general'];
+    const cats = mapChannelCategories(entry.name, rawCats);
 
     resolvedChannels.push({
       id,
@@ -3014,27 +3368,13 @@ async function buildTvCatalog() {
     })
     .sort((a, b) => b.count - a.count);
 
-  const coreOrder = new Map<string, number>(CORE_TV_CATEGORIES.map((id, idx) => [id, idx]));
-  for (const coreId of CORE_TV_CATEGORIES) {
-    if (!categoryCounts.has(coreId)) {
-      categoryCounts.set(coreId, 0);
-    }
-  }
-
-  const categories: TvCategoryOption[] = Array.from(categoryCounts.entries())
-    .map(([id, count]) => ({
-      id,
-      name: categoryNameMap.get(id) || id[0].toUpperCase() + id.slice(1),
-      count,
-    }))
-    .sort((a, b) => {
-      const aCore = coreOrder.get(a.id);
-      const bCore = coreOrder.get(b.id);
-      if (aCore !== undefined && bCore !== undefined) return aCore - bCore;
-      if (aCore !== undefined) return -1;
-      if (bCore !== undefined) return 1;
-      return b.count - a.count;
-    });
+  const categories: TvCategoryOption[] = STANDARD_TV_CATEGORIES.map((c) => ({
+    id: c.id,
+    no: c.no,
+    name: `${c.no}. ${c.name}`,
+    description: c.description,
+    count: categoryCounts.get(c.id) || 0,
+  }));
 
   cachedTvCatalog = {
     timestamp: Date.now(),

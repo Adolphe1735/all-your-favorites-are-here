@@ -156,6 +156,8 @@ export interface TvCategoryOption {
   id: string;
   name: string;
   count: number;
+  no?: number;
+  description?: string;
 }
 
 export type AppView =

@@ -23,38 +23,35 @@ import { ErrorNotice } from './ErrorNotice';
 import { HlsVideoPlayer } from './HlsVideoPlayer';
 
 const DEFAULT_TV_CATEGORIES: TvCategoryOption[] = [
-  { id: 'general', name: 'General', count: 0 },
-  { id: 'news', name: 'News', count: 0 },
-  { id: 'religious', name: 'Religious', count: 0 },
-  { id: 'entertainment', name: 'Entertainment', count: 0 },
-  { id: 'music', name: 'Music', count: 0 },
-  { id: 'movies', name: 'Movies', count: 0 },
-  { id: 'series', name: 'Series', count: 0 },
-  { id: 'sports', name: 'Sports', count: 0 },
-  { id: 'kids', name: 'Kids', count: 0 },
-  { id: 'legislative', name: 'Legislative', count: 0 },
-  { id: 'education', name: 'Education', count: 0 },
-  { id: 'culture', name: 'Culture', count: 0 },
-  { id: 'documentary', name: 'Documentary', count: 0 },
-  { id: 'comedy', name: 'Comedy', count: 0 },
+  { id: 'sports', no: 1, name: '1. Sports TV', description: 'Football, basketball, athletics', count: 0 },
+  { id: 'motorsport', no: 2, name: '2. Motorsport TV', description: 'Car racing, motorcycle racing, Formula 1, MotoGP', count: 0 },
+  { id: 'news', no: 3, name: '3. News TV', description: 'National and international news', count: 0 },
+  { id: 'movies', no: 4, name: '4. Movies TV', description: 'Action, comedy, drama, adventure', count: 0 },
+  { id: 'music', no: 5, name: '5. Music TV', description: 'Music videos, concerts, entertainment', count: 0 },
+  { id: 'documentary', no: 6, name: '6. Documentary TV', description: 'History, science, nature, discoveries', count: 0 },
+  { id: 'educational', no: 7, name: '7. Educational TV', description: 'Learning, technology, science, languages', count: 0 },
+  { id: 'kids', no: 8, name: '8. Kids TV', description: "Cartoons and children's programs", count: 0 },
+  { id: 'wildlife', no: 9, name: '9. Wildlife TV', description: 'Animals, forests, oceans and nature', count: 0 },
+  { id: 'technology', no: 10, name: '10. Technology TV', description: 'Computers, AI, robotics and innovation', count: 0 },
+  { id: 'business', no: 11, name: '11. Business TV', description: 'Finance, companies, economics and markets', count: 0 },
+  { id: 'religious', no: 12, name: '12. Religious TV', description: 'Religious teachings and programs', count: 0 },
+  { id: 'lifestyle', no: 13, name: '13. Lifestyle TV', description: 'Fashion, beauty and daily life', count: 0 },
+  { id: 'cooking', no: 14, name: '14. Cooking TV', description: 'Food, recipes and cooking competitions', count: 0 },
+  { id: 'travel', no: 15, name: '15. Travel TV', description: 'Countries, tourism and cultures', count: 0 },
+  { id: 'reality', no: 16, name: '16. Reality TV', description: 'Competitions and reality shows', count: 0 },
+  { id: 'comedy', no: 17, name: '17. Comedy TV', description: 'Comedy shows and stand-up', count: 0 },
+  { id: 'drama', no: 18, name: '18. Drama TV', description: 'Series, soap operas and television dramas', count: 0 },
+  { id: 'automotive', no: 19, name: '19. Automotive TV', description: 'Cars, motorcycles, reviews and repairs', count: 0 },
+  { id: 'gaming', no: 20, name: '20. Gaming & Esports TV', description: 'Video games and gaming competitions', count: 0 },
+  { id: 'weather', no: 21, name: '21. Weather TV', description: 'Weather forecasts and climate', count: 0 },
+  { id: 'agriculture', no: 22, name: '22. Agriculture TV', description: 'Farming, livestock and agribusiness', count: 0 },
+  { id: 'health', no: 23, name: '23. Health TV', description: 'Health education and wellness', count: 0 },
+  { id: 'politics', no: 24, name: '24. Politics TV', description: 'Government, elections and political discussions', count: 0 },
 ];
 
 const DEFAULT_CATEGORY_META: Record<string, string> = {
-  all: 'Live international television broadcasts spanning all 14 live genres and global networks.',
-  general: 'Flagship national broadcasters, public television networks, and live regional TV feeds.',
-  news: '24/7 breaking global newsrooms, live briefings, and international current affairs.',
-  religious: 'Live faith broadcasts, cathedral services, gospel ministries, and spiritual programming.',
-  entertainment: 'Variety networks, lifestyle shows, talk television, and live pop-culture channels.',
-  music: '24-hour music video networks, live concerts, urban beats, and electronic club visuals.',
-  movies: 'Continuous cinema streams, classic feature films, and curated international movie channels.',
-  series: 'Binge-ready drama, crime docuseries, reality TV, and episodic television networks.',
-  sports: 'Live international sports networks, football, motorsport, athletics, and combat sports.',
-  kids: 'Family-safe cartoons, preschool learning channels, and animated adventure streams.',
-  legislative: 'Live parliamentary chambers, public policy hearings, and national assembly feeds.',
-  education: 'History, science, lifelong learning, agricultural, and classroom broadcast channels.',
-  culture: 'Arts, heritage programming, performing arts, literature, and global cultural showcases.',
-  documentary: 'Nature expeditions, science features, investigative films, and historical documentaries.',
-  comedy: 'Stand-up showcases, sitcom marathons, sketch comedy, and late-night humor streams.',
+  all: 'Live international television broadcasts spanning all 24 categorized TV channels worldwide.',
+  ...Object.fromEntries(DEFAULT_TV_CATEGORIES.map((c) => [c.id, c.description || ''])),
 };
 
 const QUICK_FEATURED_CHANNELS: TvChannel[] = [
@@ -109,7 +106,7 @@ const QUICK_FEATURED_CHANNELS: TvChannel[] = [
     countryCode: 'GB',
     countryName: 'United Kingdom',
     countryFlag: '🇬🇧',
-    categories: ['music', 'entertainment'],
+    categories: ['music', 'lifestyle'],
     logoUrl: '',
     streamUrl: 'https://amg01131-tracetv-amg01131c5-stirr-us-4389.playouts.now.amagi.tv/playlist.m3u8',
     quality: '1080p',
@@ -121,7 +118,7 @@ const QUICK_FEATURED_CHANNELS: TvChannel[] = [
     countryCode: 'RW',
     countryName: 'Rwanda',
     countryFlag: '🇷🇼',
-    categories: ['general', 'news'],
+    categories: ['news', 'politics', 'drama'],
     logoUrl: 'https://i.imgur.com/4nbGvxW.png',
     streamUrl: 'https://5c46fa289c89f.streamlock.net/rtv25/rtv/playlist.m3u8',
     alternateUrls: ['http://197.243.19.131:1935/rtv25/rtv/chunklist.m3u8'],
@@ -416,7 +413,7 @@ export function LiveTvView({
               <div className="space-y-1.5 max-w-md">
                 <h2 className="font-display text-xl font-bold">TV Video Theatre Ready</h2>
                 <p className="text-xs text-[#A3A096] leading-relaxed">
-                  Pick any of the 14 live categories below or jump straight into a verified HD channel stream.
+                  Pick any of the 24 TV categories below or jump straight into a verified HD channel stream.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2">
@@ -618,7 +615,7 @@ export function LiveTvView({
           </button>
         </form>
 
-        {/* 14 Live Category Tabs with Live Channel Counts */}
+        {/* 24 Numbered TV Categories with Live Channel Counts */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
@@ -629,19 +626,20 @@ export function LiveTvView({
                 : 'border-[var(--sm-border)] bg-[var(--sm-surface)] text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] hover:border-[var(--sm-text-muted)]'
             }`}
           >
-            <span>All Categories</span>
+            <span>All 24 Categories</span>
             {totalWorldwide > 0 && (
               <span className={`text-[11px] font-mono ${category === 'all' ? 'opacity-90' : 'text-[var(--sm-text-muted)]'}`}>
                 ({totalWorldwide.toLocaleString()})
               </span>
             )}
           </button>
-          {categories.slice(0, 14).map((cat) => {
+          {categories.slice(0, 24).map((cat) => {
             const active = category === cat.id;
             return (
               <button
                 key={cat.id}
                 type="button"
+                title={cat.description || DEFAULT_CATEGORY_META[cat.id] || cat.name}
                 onClick={() => handleSelectCategory(cat.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 tabular-nums ${
                   active
