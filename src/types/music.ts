@@ -36,6 +36,10 @@ export interface MusicTrack {
   isPreview?: boolean;
   isLive?: boolean;
   bitrateLabel?: string;
+  stationNumber?: number;
+  frequency?: string;
+  programs?: string;
+  website?: string;
   youtubeVideoId?: string;
   videoUrl?: string;
   isVideo?: boolean;

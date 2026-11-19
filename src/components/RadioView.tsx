@@ -13,6 +13,10 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
+  ExternalLink,
+  LayoutList,
+  LayoutGrid,
+  Globe,
 } from 'lucide-react';
 import type { MusicTrack } from '../types/music';
 import { fetchJsonChecked, normalizeError, type AppErrorInfo } from '../utils/errors';
@@ -29,18 +33,20 @@ const DEFAULT_RADIO_GENRES: RadioGenreOption[] = [
   { id: 'news', label: 'News & Talk' },
   { id: 'music', label: 'Music & Hits' },
   { id: 'afrobeats', label: 'Afrobeats & African' },
+  { id: 'sports', label: 'Sports Radio' },
+  { id: 'gospel', label: 'Gospel & Religious' },
+  { id: 'education', label: 'Education' },
+  { id: 'community', label: 'Community' },
   { id: 'jazz', label: 'Jazz & Blues' },
   { id: 'electronic', label: 'Electronic & Dance' },
   { id: 'hiphop', label: 'Hip-Hop & Urban' },
-  { id: 'gospel', label: 'Gospel & Christian' },
   { id: 'classical', label: 'Classical & Ambient' },
-  { id: 'sports', label: 'Sports Radio' },
   { id: 'rock', label: 'Rock & Indie' },
 ];
 
 const DEFAULT_RADIO_COUNTRIES = [
-  'All Countries',
   'Rwanda',
+  'All Countries',
   'United States',
   'United Kingdom',
   'France',
@@ -88,9 +94,10 @@ export function RadioView({
   onCacheTracks,
 }: RadioViewProps) {
   const [query, setQuery] = useState(initialQuery);
-  const [country, setCountry] = useState('All Countries');
+  const [country, setCountry] = useState('Rwanda');
   const [genreTag, setGenreTag] = useState('all');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'directory' | 'cards'>('directory');
 
   const [stations, setStations] = useState<MusicTrack[]>([]);
   const [countries, setCountries] = useState<string[]>(DEFAULT_RADIO_COUNTRIES);
@@ -123,14 +130,14 @@ export function RadioView({
           q: activeQuery,
           country,
           tag: genreTag,
-          limit: '36',
+          limit: country === 'Rwanda' ? '40' : '36',
         });
         const data = await fetchJsonChecked<{
           stations?: MusicTrack[];
           countries?: string[];
           genres?: RadioGenreOption[];
         }>(`/api/music/radio?${params.toString()}`, {
-          context: 'Live world radio',
+          context: 'Live radio',
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
@@ -139,15 +146,22 @@ export function RadioView({
         setStations(list);
         if (list.length > 0) onCacheTracks(list);
         if (Array.isArray(data.countries) && data.countries.length > 0) {
-          setCountries(data.countries);
+          const uniqueCountries = Array.from(new Set(['Rwanda', ...data.countries]));
+          setCountries(uniqueCountries);
         }
         if (Array.isArray(data.genres) && data.genres.length > 0) {
-          setGenres(data.genres);
+          const mergedGenres = [...data.genres];
+          for (const g of DEFAULT_RADIO_GENRES) {
+            if (!mergedGenres.some((m) => m.id === g.id)) {
+              mergedGenres.push(g);
+            }
+          }
+          setGenres(mergedGenres);
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setStations([]);
-        setError(normalizeError(err, 'Live world radio'));
+        setError(normalizeError(err, 'Live radio'));
       } finally {
         if (fetchAbortRef.current === controller) {
           setLoading(false);
@@ -177,6 +191,16 @@ export function RadioView({
     if (!favoritesOnly) return stations;
     return stations.filter((s) => favoriteSet.has(s.id));
   }, [stations, favoritesOnly, favoriteSet]);
+
+  const numberedRwandaStations = useMemo(
+    () => displayedStations.filter((s) => typeof s.stationNumber === 'number'),
+    [displayedStations],
+  );
+
+  const extraWebStations = useMemo(
+    () => displayedStations.filter((s) => typeof s.stationNumber !== 'number'),
+    [displayedStations],
+  );
 
   const activeRadioStation = currentTrack?.isLive ? currentTrack : null;
   const activeIndex = useMemo(() => {
@@ -227,10 +251,12 @@ export function RadioView({
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--sm-border)] pb-5">
         <div>
           <p className="text-xs font-medium text-[var(--sm-text-muted)] mb-1">
-            Worldwide FM &amp; Internet Broadcasts · Audio Only
+            {country === 'Rwanda'
+              ? 'Rwanda National, Commercial & Community FM Directory · Live Audio Only'
+              : 'Worldwide FM & Internet Broadcasts · Audio Only'}
           </p>
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-[var(--sm-text)]">
-            Live Radio Tuner
+            {country === 'Rwanda' ? 'Rwanda Live Radio (All 20 FM)' : 'Live Radio Tuner'}
           </h1>
         </div>
 
@@ -239,16 +265,32 @@ export function RadioView({
             type="button"
             onClick={() => {
               setFavoritesOnly(false);
-              setCountry((prev) => (prev === 'Rwanda' ? 'All Countries' : 'Rwanda'));
+              setCountry('Rwanda');
             }}
             className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
               country === 'Rwanda'
-                ? 'border-[var(--sm-accent)] bg-[var(--sm-accent-soft)] text-[var(--sm-accent-text)]'
+                ? 'border-[var(--sm-accent)] bg-[var(--sm-accent-soft)] text-[var(--sm-accent-text)] font-semibold'
                 : 'border-[var(--sm-border)] bg-[var(--sm-surface)] text-[var(--sm-text-sec)] hover:text-[var(--sm-text)]'
             }`}
           >
             <span>🇷🇼</span>
-            <span>Rwanda FM Radio</span>
+            <span>Rwanda FM (All 20)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setFavoritesOnly(false);
+              setCountry('All Countries');
+            }}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
+              country !== 'Rwanda'
+                ? 'border-[var(--sm-accent)] bg-[var(--sm-accent-soft)] text-[var(--sm-accent-text)] font-semibold'
+                : 'border-[var(--sm-border)] bg-[var(--sm-surface)] text-[var(--sm-text-sec)] hover:text-[var(--sm-text)]'
+            }`}
+          >
+            <Globe size={13} />
+            <span>Worldwide Radio</span>
           </button>
 
           <button
@@ -303,15 +345,20 @@ export function RadioView({
                 <div className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#15803D] dark:text-emerald-400">
                   <Radio size={12} className={isPlaying ? 'animate-pulse' : ''} />
                   <span>
-                    {isPlaying ? 'ON AIR' : 'TUNED (PAUSED)'} · {activeRadioStation.country} ·{' '}
-                    {activeRadioStation.bitrateLabel || 'Live Stream'}
+                    {isPlaying ? 'ON AIR' : 'TUNED (PAUSED)'} ·{' '}
+                    {activeRadioStation.frequency && activeRadioStation.frequency !== '—'
+                      ? `${activeRadioStation.frequency} · `
+                      : ''}
+                    {activeRadioStation.country} · {activeRadioStation.bitrateLabel || 'Live Stream'}
                   </span>
                 </div>
                 <h2 className="font-display text-lg sm:text-xl font-bold text-[var(--sm-text)] truncate">
+                  {activeRadioStation.stationNumber ? `#${activeRadioStation.stationNumber} ` : ''}
                   {activeRadioStation.title}
                 </h2>
                 <p className="text-xs text-[var(--sm-text-sec)] truncate">
-                  {activeRadioStation.genre} · {activeRadioStation.album}
+                  {activeRadioStation.programs || activeRadioStation.genre} ·{' '}
+                  {activeRadioStation.artist}
                 </p>
               </div>
             </div>
@@ -389,10 +436,12 @@ export function RadioView({
               </div>
               <div>
                 <h2 className="font-display text-lg font-bold text-[var(--sm-text)]">
-                  Ready to Tune Live Radio
+                  {country === 'Rwanda'
+                    ? 'Tune Any of Rwanda’s 20 Live FM Radio Stations'
+                    : 'Ready to Tune Live Radio'}
                 </h2>
                 <p className="text-xs text-[var(--sm-text-sec)]">
-                  Pick any FM or internet station below to start streaming live radio with 5-band EQ support.
+                  Click any station below to stream live broadcasts with Soundmark’s 5-band parametric EQ.
                 </p>
               </div>
             </div>
@@ -422,7 +471,7 @@ export function RadioView({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search radio stations by name, FM frequency, city, or tag..."
+              placeholder="Search by station name, FM frequency (e.g. 100.7), city, or programmes..."
               className="w-full h-10 pl-10 pr-4 rounded-lg bg-[var(--sm-surface)] border border-[var(--sm-border)] text-sm text-[var(--sm-text)] placeholder:text-[var(--sm-text-muted)] focus:outline-none focus:border-[var(--sm-accent)]"
             />
           </div>
@@ -430,7 +479,7 @@ export function RadioView({
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             aria-label="Filter radio stations by country"
-            className="h-10 px-3 rounded-lg bg-[var(--sm-surface)] border border-[var(--sm-border)] text-xs font-medium text-[var(--sm-text)] sm:w-56 focus:outline-none focus:border-[var(--sm-accent)]"
+            className="h-10 px-3 rounded-lg bg-[var(--sm-surface)] border border-[var(--sm-border)] text-xs font-medium text-[var(--sm-text)] sm:w-52 focus:outline-none focus:border-[var(--sm-accent)]"
           >
             {countries.map((c) => (
               <option key={c} value={c}>
@@ -446,35 +495,66 @@ export function RadioView({
           </button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-1.5">
-          {genres.map((g) => {
-            const active = genreTag === g.id;
-            return (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {genres.map((g) => {
+              const active = genreTag === g.id;
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => {
+                    setFavoritesOnly(false);
+                    setGenreTag(g.id);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
+                    active
+                      ? 'border-[var(--sm-accent)] bg-[var(--sm-accent)] text-[var(--sm-on-accent)] font-semibold'
+                      : 'border-[var(--sm-border)] bg-[var(--sm-surface)] text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] hover:border-[var(--sm-text-muted)]'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {numberedRwandaStations.length > 0 && (
+            <div className="inline-flex items-center rounded-lg border border-[var(--sm-border)] bg-[var(--sm-surface)] p-0.5 shrink-0">
               <button
-                key={g.id}
                 type="button"
-                onClick={() => {
-                  setFavoritesOnly(false);
-                  setGenreTag(g.id);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
-                  active
-                    ? 'border-[var(--sm-accent)] bg-[var(--sm-accent)] text-[var(--sm-on-accent)] font-semibold'
-                    : 'border-[var(--sm-border)] bg-[var(--sm-surface)] text-[var(--sm-text-sec)] hover:text-[var(--sm-text)] hover:border-[var(--sm-text-muted)]'
+                onClick={() => setLayoutMode('directory')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  layoutMode === 'directory'
+                    ? 'bg-[var(--sm-accent-soft)] text-[var(--sm-accent-text)]'
+                    : 'text-[var(--sm-text-muted)] hover:text-[var(--sm-text)]'
                 }`}
               >
-                {g.label}
+                <LayoutList size={13} />
+                <span>Directory</span>
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => setLayoutMode('cards')}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  layoutMode === 'cards'
+                    ? 'bg-[var(--sm-accent-soft)] text-[var(--sm-accent-text)]'
+                    : 'text-[var(--sm-text-muted)] hover:text-[var(--sm-text)]'
+                }`}
+              >
+                <LayoutGrid size={13} />
+                <span>Cards</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Stations Directory */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-            <div key={n} className="h-24 rounded-xl bg-[var(--sm-muted)]" />
+        <div className="space-y-3 animate-pulse">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <div key={n} className="h-14 rounded-xl bg-[var(--sm-muted)]" />
           ))}
         </div>
       ) : error ? (
@@ -493,7 +573,6 @@ export function RadioView({
             type="button"
             onClick={() => {
               setQuery('');
-              setCountry('All Countries');
               setGenreTag('all');
               setFavoritesOnly(false);
             }}
@@ -503,96 +582,302 @@ export function RadioView({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayedStations.map((station) => {
-            const active = currentTrack?.id === station.id;
-            const saved = favoriteSet.has(station.id);
-            const queued = queuedFlashId === station.id;
-            return (
-              <div
-                key={station.id}
-                className={`rounded-xl border p-4 flex items-center gap-3.5 transition-colors ${
-                  active
-                    ? 'border-[var(--sm-accent)] bg-[var(--sm-muted)]'
-                    : 'border-[var(--sm-border)] bg-[var(--sm-surface)] hover:border-[var(--sm-text-muted)]'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    active ? onTogglePlayPause() : onPlayStation(station, displayedStations)
-                  }
-                  className="flex items-center gap-3.5 min-w-0 flex-1 text-left"
-                >
-                  <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden border border-[var(--sm-border)] bg-[var(--sm-bg)]">
-                    <CoverArtwork
-                      src={station.coverUrl}
-                      alt={station.title}
-                      roundedClassName="rounded-none"
-                      sizeIcon={20}
-                    />
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity ${
-                        active ? 'opacity-100' : 'opacity-0 hover:opacity-100'
-                      }`}
-                    >
-                      {active && isPlaying ? (
-                        <Pause size={16} fill="currentColor" />
-                      ) : (
-                        <Play size={16} fill="currentColor" className="ml-0.5" />
-                      )}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#15803D] dark:text-emerald-400">
-                      <Radio size={11} />
-                      <span className="truncate">
-                        {active && isPlaying ? 'PLAYING' : 'LIVE'} · {station.country}
-                      </span>
-                    </div>
-                    <div className="text-sm font-semibold text-[var(--sm-text)] truncate">
-                      {station.title}
-                    </div>
-                    <div className="text-xs text-[var(--sm-text-muted)] truncate">
-                      {station.genre} · {station.bitrateLabel || 'Live Stream'}
-                    </div>
-                  </div>
-                </button>
+        <div className="space-y-8">
+          {/* Numbered 1-20 Rwanda FM Directory */}
+          {numberedRwandaStations.length > 0 && layoutMode === 'directory' && (
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-display text-lg font-bold text-[var(--sm-text)]">
+                  🇷🇼 Rwanda FM Radio Directory ({numberedRwandaStations.length})
+                </h2>
+                <span className="text-xs font-mono text-[var(--sm-text-muted)]">
+                  No. 1–20 · Live Stream Audio + Frequencies
+                </span>
+              </div>
 
-                <div className="flex flex-col gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => toggleFavorite(station.id)}
-                    aria-label={saved ? 'Remove from saved stations' : 'Save station'}
-                    className={`p-1.5 rounded-md transition-colors ${
-                      saved
-                        ? 'text-[var(--sm-accent-text)]'
-                        : 'text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)]'
-                    }`}
-                  >
-                    <Heart size={14} fill={saved ? 'currentColor' : 'none'} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onAddToQueue(station);
-                      setQueuedFlashId(station.id);
-                      setTimeout(() => setQueuedFlashId(null), 1300);
-                    }}
-                    title="Add station to queue"
-                    aria-label="Add station to queue"
-                    className="p-1.5 rounded-md text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)] transition-colors"
-                  >
-                    {queued ? (
-                      <Check size={14} className="text-[var(--sm-accent-text)]" />
-                    ) : (
-                      <ListPlus size={14} />
-                    )}
-                  </button>
+              <div className="rounded-xl border border-[var(--sm-border)] bg-[var(--sm-surface)] overflow-hidden">
+                {/* Table Header */}
+                <div className="hidden md:grid md:grid-cols-[56px_minmax(190px,1.2fr)_120px_minmax(220px,1.5fr)_136px] gap-4 px-4 py-3 border-b border-[var(--sm-border)] bg-[var(--sm-bg)] text-[11px] font-semibold uppercase tracking-wider text-[var(--sm-text-muted)]">
+                  <div>No.</div>
+                  <div>Station</div>
+                  <div>Frequency</div>
+                  <div>Programmes</div>
+                  <div className="text-right">Listen</div>
+                </div>
+
+                {/* Station Rows */}
+                <div className="divide-y divide-[var(--sm-border)]">
+                  {numberedRwandaStations.map((station) => {
+                    const active = currentTrack?.id === station.id;
+                    const saved = favoriteSet.has(station.id);
+                    const queued = queuedFlashId === station.id;
+                    return (
+                      <div
+                        key={station.id}
+                        className={`grid grid-cols-1 md:grid-cols-[56px_minmax(190px,1.2fr)_120px_minmax(220px,1.5fr)_136px] gap-3 md:gap-4 items-center px-4 py-3.5 transition-colors ${
+                          active
+                            ? 'bg-[var(--sm-accent-soft)]/50'
+                            : 'hover:bg-[var(--sm-muted)]/50'
+                        }`}
+                      >
+                        {/* No. */}
+                        <div className="flex items-center justify-between md:justify-start gap-2">
+                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--sm-border)] bg-[var(--sm-bg)] font-mono text-xs font-bold text-[var(--sm-text)]">
+                            {station.stationNumber}
+                          </span>
+                          <span className="md:hidden font-mono text-xs px-2.5 py-1 rounded-md border border-[var(--sm-border)] bg-[var(--sm-bg)] text-[var(--sm-text)]">
+                            {station.frequency || '—'}
+                          </span>
+                        </div>
+
+                        {/* Station */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            active ? onTogglePlayPause() : onPlayStation(station, displayedStations)
+                          }
+                          className="flex items-center gap-3 min-w-0 text-left group"
+                        >
+                          <span
+                            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border transition-colors ${
+                              active
+                                ? 'border-[var(--sm-accent)] bg-[var(--sm-accent)] text-[var(--sm-on-accent)]'
+                                : 'border-[var(--sm-border)] bg-[var(--sm-bg)] text-[var(--sm-text)] group-hover:border-[var(--sm-accent)] group-hover:text-[var(--sm-accent-text)]'
+                            }`}
+                          >
+                            {active && isPlaying ? (
+                              <Pause size={14} fill="currentColor" />
+                            ) : (
+                              <Play size={14} fill="currentColor" className="ml-0.5" />
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-[var(--sm-text)] truncate">
+                                {station.title}
+                              </span>
+                              {active && isPlaying && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#15803D] dark:text-emerald-400">
+                                  <Radio size={10} className="animate-pulse" />
+                                  ON AIR
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-[var(--sm-text-muted)] truncate">
+                              {station.artist} · {station.bitrateLabel || 'Live Stream'}
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Frequency */}
+                        <div className="hidden md:block">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-md font-mono text-xs border ${
+                              station.frequency && station.frequency !== '—'
+                                ? 'border-[var(--sm-border)] bg-[var(--sm-bg)] font-semibold text-[var(--sm-text)]'
+                                : 'border-[var(--sm-border)]/60 bg-transparent text-[var(--sm-text-muted)]'
+                            }`}
+                          >
+                            {station.frequency || '—'}
+                          </span>
+                        </div>
+
+                        {/* Programmes */}
+                        <div className="text-xs sm:text-sm text-[var(--sm-text-sec)]">
+                          <span className="md:hidden font-medium text-[var(--sm-text-muted)] mr-1">
+                            Programmes:
+                          </span>
+                          {station.programs || station.genre}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center md:justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              active
+                                ? onTogglePlayPause()
+                                : onPlayStation(station, displayedStations)
+                            }
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                              active
+                                ? 'bg-[var(--sm-accent)] text-[var(--sm-on-accent)]'
+                                : 'border border-[var(--sm-border)] bg-[var(--sm-bg)] text-[var(--sm-text)] hover:border-[var(--sm-accent)]'
+                            }`}
+                          >
+                            {active && isPlaying ? (
+                              <>
+                                <Pause size={12} fill="currentColor" />
+                                <span>Pause</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play size={12} fill="currentColor" />
+                                <span>Listen</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleFavorite(station.id)}
+                            aria-label={saved ? 'Remove from saved stations' : 'Save station'}
+                            className={`p-1.5 rounded-md transition-colors ${
+                              saved
+                                ? 'text-[var(--sm-accent-text)]'
+                                : 'text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)]'
+                            }`}
+                          >
+                            <Heart size={14} fill={saved ? 'currentColor' : 'none'} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onAddToQueue(station);
+                              setQueuedFlashId(station.id);
+                              setTimeout(() => setQueuedFlashId(null), 1300);
+                            }}
+                            title="Add station to queue"
+                            aria-label="Add station to queue"
+                            className="p-1.5 rounded-md text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)] transition-colors"
+                          >
+                            {queued ? (
+                              <Check size={14} className="text-[var(--sm-accent-text)]" />
+                            ) : (
+                              <ListPlus size={14} />
+                            )}
+                          </button>
+
+                          {station.website && (
+                            <a
+                              href={station.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Open ${station.title} website`}
+                              aria-label={`Open ${station.title} website`}
+                              className="p-1.5 rounded-md text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)] transition-colors"
+                            >
+                              <ExternalLink size={13} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
+            </section>
+          )}
+
+          {/* Card Grid for Cards view, Worldwide stations, or additional Rwandan web relays */}
+          {(layoutMode === 'cards'
+            ? displayedStations
+            : extraWebStations
+          ).length > 0 && (
+            <section className="space-y-3">
+              {numberedRwandaStations.length > 0 && layoutMode === 'directory' && (
+                <h2 className="font-display text-base font-bold text-[var(--sm-text)]">
+                  More Live Rwandan Web Stations ({extraWebStations.length})
+                </h2>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(layoutMode === 'cards' ? displayedStations : extraWebStations).map((station) => {
+                  const active = currentTrack?.id === station.id;
+                  const saved = favoriteSet.has(station.id);
+                  const queued = queuedFlashId === station.id;
+                  return (
+                    <div
+                      key={station.id}
+                      className={`rounded-xl border p-4 flex items-center gap-3.5 transition-colors ${
+                        active
+                          ? 'border-[var(--sm-accent)] bg-[var(--sm-muted)]'
+                          : 'border-[var(--sm-border)] bg-[var(--sm-surface)] hover:border-[var(--sm-text-muted)]'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          active ? onTogglePlayPause() : onPlayStation(station, displayedStations)
+                        }
+                        className="flex items-center gap-3.5 min-w-0 flex-1 text-left"
+                      >
+                        <div className="relative w-14 h-14 shrink-0 rounded-lg overflow-hidden border border-[var(--sm-border)] bg-[var(--sm-bg)]">
+                          <CoverArtwork
+                            src={station.coverUrl}
+                            alt={station.title}
+                            roundedClassName="rounded-none"
+                            sizeIcon={20}
+                          />
+                          <span
+                            className={`absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity ${
+                              active ? 'opacity-100' : 'opacity-0 hover:opacity-100'
+                            }`}
+                          >
+                            {active && isPlaying ? (
+                              <Pause size={16} fill="currentColor" />
+                            ) : (
+                              <Play size={16} fill="currentColor" className="ml-0.5" />
+                            )}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#15803D] dark:text-emerald-400">
+                            <Radio size={11} />
+                            <span className="truncate">
+                              {station.stationNumber ? `#${station.stationNumber} · ` : ''}
+                              {active && isPlaying ? 'PLAYING' : 'LIVE'} ·{' '}
+                              {station.frequency && station.frequency !== '—'
+                                ? station.frequency
+                                : station.country}
+                            </span>
+                          </div>
+                          <div className="text-sm font-semibold text-[var(--sm-text)] truncate">
+                            {station.title}
+                          </div>
+                          <div className="text-xs text-[var(--sm-text-muted)] truncate">
+                            {station.programs || station.genre} · {station.bitrateLabel || 'Live Stream'}
+                          </div>
+                        </div>
+                      </button>
+
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleFavorite(station.id)}
+                          aria-label={saved ? 'Remove from saved stations' : 'Save station'}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            saved
+                              ? 'text-[var(--sm-accent-text)]'
+                              : 'text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)]'
+                          }`}
+                        >
+                          <Heart size={14} fill={saved ? 'currentColor' : 'none'} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onAddToQueue(station);
+                            setQueuedFlashId(station.id);
+                            setTimeout(() => setQueuedFlashId(null), 1300);
+                          }}
+                          title="Add station to queue"
+                          aria-label="Add station to queue"
+                          className="p-1.5 rounded-md text-[var(--sm-text-muted)] hover:text-[var(--sm-text)] hover:bg-[var(--sm-muted)] transition-colors"
+                        >
+                          {queued ? (
+                            <Check size={14} className="text-[var(--sm-accent-text)]" />
+                          ) : (
+                            <ListPlus size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>

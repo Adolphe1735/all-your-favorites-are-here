@@ -767,13 +767,19 @@ export function RwandaMusicView({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#15803D] dark:text-emerald-400">
                       <Radio size={11} />
-                      <span>LIVE · RWANDA</span>
+                      <span className="truncate">
+                        {station.stationNumber ? `#${station.stationNumber} · ` : ''}
+                        LIVE ·{' '}
+                        {station.frequency && station.frequency !== '—'
+                          ? station.frequency
+                          : 'RWANDA'}
+                      </span>
                     </div>
                     <div className="text-sm font-semibold text-[var(--sm-text)] truncate">
                       {station.title}
                     </div>
                     <div className="text-xs text-[var(--sm-text-muted)] truncate">
-                      {station.genre} · {station.bitrateLabel || 'Live FM'}
+                      {station.programs || station.genre}
                     </div>
                   </div>
                 </button>

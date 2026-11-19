@@ -512,12 +512,332 @@ interface RadioStationRaw {
   codec?: string;
 }
 
+interface RwandaRadioStationSeed {
+  no: number;
+  id: string;
+  name: string;
+  frequency: string;
+  programs: string;
+  city: string;
+  genre: string;
+  tags: string[];
+  streamUrl: string;
+  bitrateLabel: string;
+  website: string;
+}
+
+const RWANDA_RADIO_STATIONS: RwandaRadioStationSeed[] = [
+  {
+    no: 1,
+    id: 'rw-radio-01-radio-rwanda',
+    name: 'Radio Rwanda',
+    frequency: '100.7 FM',
+    programs: 'News, education, culture',
+    city: 'Kigali',
+    genre: 'News & Culture',
+    tags: ['news', 'education', 'culture', 'talk', 'public'],
+    streamUrl: 'https://listen.rba.co.rw:8008/rwanda',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.rba.co.rw/radio',
+  },
+  {
+    no: 2,
+    id: 'rw-radio-02-kiss-fm',
+    name: 'Kiss FM',
+    frequency: '102.3 FM',
+    programs: 'Music, entertainment',
+    city: 'Kigali',
+    genre: 'Music & Hits',
+    tags: ['music', 'afrobeats', 'pop', 'hiphop', 'entertainment'],
+    streamUrl: 'https://kissfm-atunwadigital.streamguys1.com/kissfm',
+    bitrateLabel: '128 kbps AAC',
+    website: 'https://kissfm.rw/',
+  },
+  {
+    no: 3,
+    id: 'rw-radio-03-kt-radio',
+    name: 'KT Radio',
+    frequency: '96.7 FM',
+    programs: 'News, sports, discussions',
+    city: 'Kigali',
+    genre: 'News & Sports',
+    tags: ['news', 'sports', 'talk', 'discussions'],
+    streamUrl: 'http://197.243.1.130:8006/k2dlivemp3',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://ktradio.rw/',
+  },
+  {
+    no: 4,
+    id: 'rw-radio-04-radio-10',
+    name: 'Radio 10',
+    frequency: '87.6 FM',
+    programs: 'News, sports, entertainment',
+    city: 'Kigali',
+    genre: 'News, Sports & Hits',
+    tags: ['news', 'sports', 'music', 'afrobeats', 'entertainment'],
+    streamUrl: 'https://radio10rwanda-atunwadigital.streamguys1.com/Radio10Rwanda',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://radiotv10.rw/radio/',
+  },
+  {
+    no: 5,
+    id: 'rw-radio-05-radio-one',
+    name: 'Radio One',
+    frequency: '91.1 FM',
+    programs: 'News, music, discussions',
+    city: 'Kigali',
+    genre: 'News & Music',
+    tags: ['news', 'music', 'talk', 'discussions'],
+    streamUrl: 'https://prime.tv1.rw/radio/',
+    bitrateLabel: 'Live MP3',
+    website: 'https://www.tv1.rw/',
+  },
+  {
+    no: 6,
+    id: 'rw-radio-06-magic-fm',
+    name: 'Magic FM',
+    frequency: '90.7 FM',
+    programs: 'Music, entertainment',
+    city: 'Kigali',
+    genre: 'Music & Urban',
+    tags: ['music', 'afrobeats', 'hiphop', 'electronic', 'entertainment'],
+    streamUrl: 'https://listen.rba.co.rw:8008/magic',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.rba.co.rw/',
+  },
+  {
+    no: 7,
+    id: 'rw-radio-07-flash-fm',
+    name: 'Flash FM',
+    frequency: '89.2 FM',
+    programs: 'News, music, sports',
+    city: 'Kigali',
+    genre: 'News, Music & Sports',
+    tags: ['news', 'music', 'sports', 'afrobeats'],
+    streamUrl: 'http://80.241.215.175:7410/;',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://flash.rw/',
+  },
+  {
+    no: 8,
+    id: 'rw-radio-08-isango-star',
+    name: 'Isango Star',
+    frequency: '91.5 FM',
+    programs: 'News, entertainment',
+    city: 'Kigali',
+    genre: 'News & Entertainment',
+    tags: ['news', 'music', 'afrobeats', 'entertainment'],
+    streamUrl: 'http://80.241.215.175:8000/;',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://isangostar.rw/',
+  },
+  {
+    no: 9,
+    id: 'rw-radio-09-radio-maria',
+    name: 'Radio Maria',
+    frequency: '97.3 FM',
+    programs: 'Religious programmes',
+    city: 'Kigali',
+    genre: 'Religious / Gospel',
+    tags: ['gospel', 'christian', 'religious', 'talk'],
+    streamUrl: 'https://dreamsiteradiocp2.com/proxy/rmrwanda2?mp=/stream',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.radiomaria.rw/',
+  },
+  {
+    no: 10,
+    id: 'rw-radio-10-capital-fm',
+    name: 'Capital FM',
+    frequency: '—',
+    programs: 'Music, news',
+    city: 'Kigali',
+    genre: 'Music & News',
+    tags: ['music', 'news', 'afrobeats', 'pop'],
+    streamUrl: 'https://stream.zeno.fm/wmf5p1176juvv',
+    bitrateLabel: 'Live MP3',
+    website: 'https://zeno.fm/radio/capital-fm-kigali/',
+  },
+  {
+    no: 11,
+    id: 'rw-radio-11-royal-fm',
+    name: 'Royal FM',
+    frequency: '94.3 FM',
+    programs: 'Music, discussions',
+    city: 'Kigali',
+    genre: 'Music & Talk',
+    tags: ['music', 'afrobeats', 'talk', 'discussions'],
+    streamUrl: 'https://s11.myradiostream.com/26760/listen.mp3',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.royalfm.rw/',
+  },
+  {
+    no: 12,
+    id: 'rw-radio-12-energy-radio',
+    name: 'Energy Radio',
+    frequency: '88.8 FM',
+    programs: 'Music, news, sports',
+    city: 'Musanze / Kigali',
+    genre: 'Music, News & Sports',
+    tags: ['music', 'news', 'sports', 'afrobeats', 'electronic'],
+    streamUrl: 'https://eu4.fastcast4u.com/proxy/energy?mp=/stream',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://energy.rw/',
+  },
+  {
+    no: 13,
+    id: 'rw-radio-13-power-fm',
+    name: 'Power FM',
+    frequency: '104.1 FM',
+    programs: 'Music, entertainment',
+    city: 'Kigali',
+    genre: 'Music & Urban',
+    tags: ['music', 'hiphop', 'afrobeats', 'entertainment'],
+    streamUrl: 'https://stream.casthost.net/listen/vision_radio_ltd1/radio.mp3',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://zeno.fm/radio/104-1-power-fm/',
+  },
+  {
+    no: 14,
+    id: 'rw-radio-14-radio-huye',
+    name: 'Radio Huye',
+    frequency: '100.4 FM',
+    programs: 'Community news',
+    city: 'Huye (Southern Province)',
+    genre: 'Community & News',
+    tags: ['news', 'community', 'culture', 'talk'],
+    streamUrl: 'https://listen.rba.co.rw:8008/huye',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.rba.co.rw/',
+  },
+  {
+    no: 15,
+    id: 'rw-radio-15-radio-rubavu',
+    name: 'Radio Rubavu',
+    frequency: '95.1 FM',
+    programs: 'Community news',
+    city: 'Rubavu (Western Province)',
+    genre: 'Community & News',
+    tags: ['news', 'community', 'culture', 'talk'],
+    streamUrl: 'https://listen.rba.co.rw:8008/rubavu',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.rba.co.rw/',
+  },
+  {
+    no: 16,
+    id: 'rw-radio-16-radio-musanze',
+    name: 'Radio Musanze',
+    frequency: '98.4 FM',
+    programs: 'Community news',
+    city: 'Musanze (Northern Province)',
+    genre: 'Community & News',
+    tags: ['news', 'community', 'culture', 'talk'],
+    streamUrl: 'https://listen.rba.co.rw:8008/musanze',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://www.rba.co.rw/',
+  },
+  {
+    no: 17,
+    id: 'rw-radio-17-radio-isangano',
+    name: 'Radio Isangano',
+    frequency: '104.9 FM',
+    programs: 'Community programmes',
+    city: 'Karongi (Western Province)',
+    genre: 'Community Programmes',
+    tags: ['community', 'news', 'culture', 'talk'],
+    streamUrl: 'https://stream.zeno.fm/qugrdv7l2z0uv',
+    bitrateLabel: 'Live MP3',
+    website: 'https://radioisangano.rw/',
+  },
+  {
+    no: 18,
+    id: 'rw-radio-18-radio-salus',
+    name: 'Radio Salus',
+    frequency: '—',
+    programs: 'Education, news',
+    city: 'Huye (University of Rwanda)',
+    genre: 'Education & News',
+    tags: ['news', 'education', 'music', 'talk'],
+    streamUrl: 'http://80.241.215.175:7070/;?type=http',
+    bitrateLabel: '128 kbps MP3',
+    website: 'https://salus.ur.ac.rw/',
+  },
+  {
+    no: 19,
+    id: 'rw-radio-19-huguka-radio',
+    name: 'Huguka Radio',
+    frequency: '105.9 FM',
+    programs: 'Education, community',
+    city: 'Muhanga (Southern Province)',
+    genre: 'Education & Community',
+    tags: ['education', 'community', 'news', 'talk'],
+    streamUrl: 'https://stream.zeno.fm/tum05pg5af9uv',
+    bitrateLabel: 'Live Stream',
+    website: 'https://radio-huguka.mdn.live/',
+  },
+  {
+    no: 20,
+    id: 'rw-radio-20-voice-of-hope',
+    name: 'Voice of Hope',
+    frequency: '—',
+    programs: 'Christian & community programmes',
+    city: 'Kigali',
+    genre: 'Religious / Community',
+    tags: ['gospel', 'christian', 'community', 'talk'],
+    streamUrl: 'https://edge.iono.fm/xice/318_medium.aac',
+    bitrateLabel: 'Live AAC',
+    website: 'https://rwandaradio.com/60796-the-voice-of-hope.html',
+  },
+];
+
+function getRwandaRadioStations(query?: string, tag?: string): MusicTrack[] {
+  const qLow = (query || '').trim().toLowerCase();
+  const tLow = (tag || '').trim().toLowerCase();
+  const artPool = [ARTWORK_ELECTRONIC, ARTWORK_ACOUSTIC, ARTWORK_JAZZ, ARTWORK_AMBIENT];
+
+  return RWANDA_RADIO_STATIONS.filter((s) => {
+    if (tLow && tLow !== 'all' && tLow !== 'all radio') {
+      const tagHay = `${s.genre} ${s.programs} ${s.tags.join(' ')}`.toLowerCase();
+      const matched =
+        s.tags.some((t) => t === tLow || t.includes(tLow)) || tagHay.includes(tLow);
+      if (!matched) return false;
+    }
+    if (qLow) {
+      const hay = `${s.no} ${s.name} ${s.frequency} ${s.programs} ${s.city} ${s.genre}`.toLowerCase();
+      if (!hay.includes(qLow)) return false;
+    }
+    return true;
+  }).map((s, idx) => ({
+    id: s.id,
+    title: s.name,
+    artist: `${s.city}, Rwanda`,
+    artistLocation: `${s.city}, Rwanda`,
+    album: s.frequency !== '—' ? `${s.frequency} · ${s.programs}` : s.programs,
+    genre: s.genre,
+    country: 'Rwanda',
+    durationSec: 0,
+    audioUrl: proxyStreamUrl(s.streamUrl),
+    coverUrl: artPool[idx % artPool.length],
+    license: 'Live Broadcast',
+    sourceLabel: 'Rwanda FM Radio',
+    isLive: true,
+    bitrateLabel: s.bitrateLabel,
+    stationNumber: s.no,
+    frequency: s.frequency,
+    programs: s.programs,
+    website: s.website,
+    storeLinks: buildStoreLinks(s.name, 'Rwanda Radio'),
+  }));
+}
+
 async function fetchRadioStations(
   country?: string,
   query?: string,
   limit = 8,
   tag?: string,
 ): Promise<MusicTrack[]> {
+  const isRwanda = country?.trim().toLowerCase() === 'rwanda';
+  const curatedRwanda = isRwanda ? getRwandaRadioStations(query, tag) : [];
+
   for (const host of RADIO_HOSTS) {
     const params = new URLSearchParams({
       limit: String(limit),
@@ -540,7 +860,7 @@ async function fetchRadioStations(
       4500,
     );
     if (Array.isArray(json) && json.length > 0) {
-      return json
+      const remoteStations: MusicTrack[] = json
         .filter((s) => (s.url_resolved || s.url) && s.name)
         .slice(0, limit)
         .map((s, idx) => {
@@ -571,9 +891,21 @@ async function fetchRadioStations(
             storeLinks: buildStoreLinks(s.name.trim(), 'Radio'),
           };
         });
+
+      if (isRwanda && curatedRwanda.length > 0) {
+        const seenNames = new Set(
+          curatedRwanda.map((r) => r.title.toLowerCase().replace(/[^a-z0-9]/g, '')),
+        );
+        const extras = remoteStations.filter((r) => {
+          const norm = r.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return !Array.from(seenNames).some((s) => norm.includes(s) || s.includes(norm));
+        });
+        return [...curatedRwanda, ...extras].slice(0, Math.max(limit, curatedRwanda.length));
+      }
+      return remoteStations;
     }
   }
-  return [];
+  return curatedRwanda;
 }
 
 interface ArchiveDocRaw {
@@ -1805,7 +2137,7 @@ app.get('/api/music/rwanda', async (req: Request, res: Response) => {
   try {
     const [allRwandaArtists, liveRadio, trendingTracks, categoryTracks] = await Promise.all([
       getRwandaArtistsCatalog(),
-      fetchRadioStations('Rwanda', undefined, 10),
+      fetchRadioStations('Rwanda', undefined, 25),
       getRwandaTrendingShowcase(),
       category && category !== 'All' ? getRwandaCategoryTracks(category) : Promise.resolve([]),
     ]);
@@ -1904,28 +2236,34 @@ const RADIO_COUNTRIES = [
 
 app.get('/api/music/radio', async (req: Request, res: Response) => {
   const q = String(req.query.q || '').trim();
-  const country = String(req.query.country || 'All Countries').trim();
+  const country = String(req.query.country || 'Rwanda').trim();
   const tag = String(req.query.tag || 'all').trim().toLowerCase();
-  const limit = Math.min(60, Math.max(8, Number(req.query.limit) || 36));
+  const limit = Math.min(60, Math.max(8, Number(req.query.limit) || 40));
 
   try {
+    const isRwanda = country.toLowerCase() === 'rwanda';
+    const effectiveLimit = isRwanda ? Math.max(limit, 30) : limit;
+
     let stations = await fetchRadioStations(
       country !== 'All Countries' ? country : undefined,
       q || undefined,
-      limit,
+      effectiveLimit,
       tag !== 'all' ? tag : undefined,
     );
 
-    // If querying Rwanda or a niche filter returns few stations, try broader country/query fallback
-    if (stations.length === 0 && country !== 'All Countries' && tag !== 'all') {
-      stations = await fetchRadioStations(country, q || undefined, limit);
+    // If querying Rwanda with an unmatched tag, fall back to full Rwanda 20 FM list
+    if (stations.length === 0 && isRwanda && tag !== 'all' && !q) {
+      stations = getRwandaRadioStations();
+    } else if (stations.length === 0 && country !== 'All Countries' && tag !== 'all') {
+      stations = await fetchRadioStations(country, q || undefined, effectiveLimit);
     }
-    if (stations.length === 0 && !q && tag === 'all') {
-      stations = await fetchRadioStations(undefined, undefined, limit);
+    if (stations.length === 0 && !q && tag === 'all' && !isRwanda) {
+      stations = await fetchRadioStations(undefined, undefined, effectiveLimit);
     }
 
     res.json({
       stations,
+      rwandaCount: RWANDA_RADIO_STATIONS.length,
       countries: RADIO_COUNTRIES,
       genres: RADIO_GENRE_OPTIONS,
     });
